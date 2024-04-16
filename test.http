@@ -1,0 +1,37 @@
+@hostname = 127.0.0.1:8000/api
+
+POST http://{{hostname}}/auth/login HTTP/1.1
+content-type: application/json
+
+{
+    "email": "haseeb@mail.com",
+    "password": "12345678"
+}
+
+###
+GET http://{{hostname}}/dashboard HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MTMxMTg0NzAsImV4cCI6MTcxMzEyMjA3MCwibmJmIjoxNzEzMTE4NDcwLCJqdGkiOiJHcUpOUjRIZDdXVUthR2luIiwic3ViIjoiMiIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.ZZfmPvzbYexb6dNnR8cnlImretILIOvXCb07KgLu2N4
+
+###
+POST http://{{hostname}}/auth/logout HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MTMxMTg0NzAsImV4cCI6MTcxMzEyMjA3MCwibmJmIjoxNzEzMTE4NDcwLCJqdGkiOiJHcUpOUjRIZDdXVUthR2luIiwic3ViIjoiMiIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.ZZfmPvzbYexb6dNnR8cnlImretILIOvXCb07KgLu2N4
+
+
+###
+POST http://{{hostname}}/auth/add_roles HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MTMyMDg2MTIsImV4cCI6MTcxMzIxMjIxMiwibmJmIjoxNzEzMjA4NjEyLCJqdGkiOiJ4cHozNjcwdjdsOFlqcERqIiwic3ViIjoiMiIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.WkMMG4e_1C3tzzzJIe_AyR-DdT69Il0B7bXJG5jNAqE
+
+
+###
+POST http://{{hostname}}/auth/register HTTP/1.1
+content-type: application/json
+
+{
+    "email": "haseeb@mail.com",
+    "password": "12345678",
+    "confirm_password": "12345678",
+    "name":"Haseeb"
+}
