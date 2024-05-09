@@ -1,0 +1,11 @@
+{
+    "name": "HMS",
+    "alias": "hms",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\HMS\\App\\Providers\\HMSServiceProvider"
+    ],
+    "files": []
+}

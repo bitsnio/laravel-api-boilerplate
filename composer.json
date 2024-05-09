@@ -24,8 +24,13 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
-        }
+            "Database\\Seeders\\": "database/seeders/",
+            "Bitsnio\\JsonToLaravelMigrations\\": "packages/json_to_migration_laravel/src/",
+            "Bitsnio\\Modules\\": "packages/laravel_modules/src/",
+            "Modules\\": "Modules/"
+        },
+        "files": [
+            "packages/laravel_modules/src/helpers.php"          ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -51,6 +56,9 @@
     },
     "extra": {
         "laravel": {
+            "providers": [
+                "Bitsnio\\Modules\\LaravelModulesServiceProvider"
+            ],
             "dont-discover": []
         }
     },
@@ -60,7 +68,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "joshbrw/laravel-module-installer": true
         }
     },
     "minimum-stability": "stable",

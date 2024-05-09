@@ -1,0 +1,29 @@
+{
+    "name": "bitsnio/json-to-migration-laravel",
+    "description": "Turn a JSON schema into Laravel migrations.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Shehryar Azeem",
+            "email": "shehryar.azeem@bitsnio.com"
+        }
+    ],
+    "autoload": {
+      "psr-4": {
+        "Bitsnio\\JsonToLaravelMigrations\\": "src"
+      }
+    },
+
+    "require-dev": {
+        "orchestra/testbench": "^6.0"
+    },
+
+  "extra": {
+    "laravel": {
+        "providers": [
+            "Bitsnio\\JsonToLaravelMigrations\\JsonToLaravelMigrationsServiceProvider"
+        ]
+    }
+}
+}
