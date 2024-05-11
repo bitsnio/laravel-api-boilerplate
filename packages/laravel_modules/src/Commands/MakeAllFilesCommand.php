@@ -116,7 +116,9 @@ class MakeAllfilesCommand extends GeneratorCommand
         $controllerName = "{$this->getModelName()}Controller";
         $this->call('module:make-controller', array_filter([
             'controller' => $controllerName,
+            '--api' => true,
             'module' => $this->argument('module'),
+
         ]));
 
         //handle migration options

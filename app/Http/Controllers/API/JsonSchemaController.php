@@ -21,11 +21,13 @@ class JsonSchemaController extends Controller
             
             $fileName = $data['sub_module'].'.json';
             $path = 'Schema/' .$data['module'].'/';
+            $module = 'Modules/' .$data['module'].'/';
 
             //Validations for module and sub-modules
             if($validator->fails()) return response()->json(['error' => implode(' ', $validator->messages()->all())]);
-            if(!is_dir(base_path($path))) return response()->json(['error' => 'Module not found']);
+            if(!is_dir(base_path($module))) return response()->json(['error' => 'Module not found']);
             if(file_exists(base_path($path.$fileName))) return response()->json(['error' => 'Schema or sub module already exists']);
+            if (!file_exists(base_path($path))) mkdir(base_path($path), 0777, true);
 
             file_put_contents(base_path($path.$fileName), json_encode($data['schema'], JSON_PRETTY_PRINT));
             return response()->json('Json schema created successfully');

@@ -62,6 +62,7 @@ class RequestMakeCommand extends GeneratorCommand
 
         return (new Stub('/request.stub', [
             'NAMESPACE' => $this->getClassNamespace($module),
+            'RULE' => $this->getValidationRules(),
             'CLASS'     => $this->getClass(),
         ]))->render();
     }
@@ -84,5 +85,12 @@ class RequestMakeCommand extends GeneratorCommand
     private function getFileName()
     {
         return Str::studly($this->argument('name'));
+    }
+    private function getValidationRules(){
+        return implode(',', [
+            '"name" => "required|string",
+            "age" => "integer|required",
+            "about" => "nullable|string"'
+        ]);
     }
 }
