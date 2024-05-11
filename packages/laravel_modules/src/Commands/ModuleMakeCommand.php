@@ -48,6 +48,7 @@ class ModuleMakeCommand extends Command
             if ($code === E_ERROR) {
                 $success = false;
             }
+            if (!file_exists('Schema/'.$name)) mkdir('Schema/'.$name, 0777, true);
         }
 
         return $success ? 0 : E_ERROR;

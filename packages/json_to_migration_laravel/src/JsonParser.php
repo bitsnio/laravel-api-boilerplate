@@ -53,13 +53,38 @@ class JsonParser {
      */
     public function get() {
         $json = file_get_contents($this->path);
-        return json_decode($json, true);
+        return $this->formatJson(json_decode($json, true));
     }
 
     /**
      * Check if the path exists
      */
     private function exists() {
-        if(!file_exists($this->path)) throw new \Exception("JSON Schema file does not exist.");
+        if(!file_exists($this->path)) throw new \Exception("JSON Schema file does not exist. Path: ". $this->path);
+    }
+
+    private function formatJson($jsonData){
+        $json = [];
+        $sub_module = pathinfo($this->path, PATHINFO_FILENAME);;
+        foreach($jsonData['properties'] as $key => $value){
+            if($value['type'] == 'object'){
+                foreach($value['properties'] as $k => $v){
+                    if(isset($v['enum'])) $json[$sub_module][$k] = "enum:".implode(',',$v['enum']);
+                    else $json[$sub_module][$k] = $v['type'];
+                }
+            }
+            elseif ($value['type'] == 'array'){
+                $json[$sub_module][$key] = 'foreign|nullable|constrained|onDelete';
+                foreach($value['items']['properties'] as $k => $v){
+                    if(isset($v['enum'])) $json[$key][$k] = 'enum:'.implode(',',$v['enum']);
+                    else $json[$key][$k] = $v['type'];
+                }
+            }
+            else {
+                if(isset($value['enum'])) $json[$sub_module][$key] = 'enum:'.implode(',',$value['enum']);
+                else $json[$sub_module][$key] = $value['type'];
+            }
+        }
+        return $json;
     }
 }

@@ -2,18 +2,18 @@
 
 namespace Bitsnio\Modules\Commands;
 
+use Bitsnio\JsonToLaravelMigrations\JsonParser;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Bitsnio\Modules\Support\Config\GenerateConfigReader;
 use Bitsnio\Modules\Support\Stub;
-use Bitsnio\Modules\Traits\LoadAndWriteJson;
 use Bitsnio\Modules\Traits\ModuleCommandTrait;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
 class MakeAllfilesCommand extends GeneratorCommand
 {
-    use ModuleCommandTrait, LoadAndWriteJson;
+    use ModuleCommandTrait;
 
     /**
      * The name of argument name.
@@ -28,8 +28,6 @@ class MakeAllfilesCommand extends GeneratorCommand
      * @var string
      */
     protected $name = 'module:make-All';
-    private $file_exist = false;
-
     /**
      * The console command description.
      *
@@ -42,13 +40,7 @@ class MakeAllfilesCommand extends GeneratorCommand
         if (parent::handle() === E_ERROR) {
             return E_ERROR;
         }
-        if(file_exists('Request.json')) {
-            $this->file_exist = true;
-            $this->createJsonTemplete($this->getModelName());
-        }
         $this->handleAllOption();
-        if($this->file_exist) File::delete(['Request.json', 'Template.json']);
-
         return 0;
     }
 
@@ -128,12 +120,10 @@ class MakeAllfilesCommand extends GeneratorCommand
         ]));
 
         //handle migration options
-        if($this->file_exist){
-            $path = $this->laravel['modules']->getModulePath($this->getModuleName());
-            $generatorPath = GenerateConfigReader::read('migration');
-            $this->call('json:migrate', ['file' => 'Template.json', 'path' => $path . $generatorPath->getPath() . '/']);
-        }
-        else $this->call('module:make-migration', ['name' => $this->getModelName(), 'module' => $this->argument('module')]);
+        $path = $this->laravel['modules']->getModulePath($this->getModuleName());
+        $generatorPath = GenerateConfigReader::read('migration');
+        $this->call('json:migrate', ['file' => 'Schema/'.$this->getModuleName().'/'.$this->getModelName().'.json', 'path' => $path . $generatorPath->getPath() . '/']);
+
 
     }
 
@@ -181,12 +171,12 @@ class MakeAllfilesCommand extends GeneratorCommand
      */
     private function getFillable()
     {
-        if($this->file_exist){
-            $fillable = $this->getFillables($this->getModelName());
-            if (!is_null($fillable)) {
-                $arrays = (is_string($fillable)) ? explode(',', $fillable) : $fillable;
-                return json_encode($arrays);
-            }
+        $parser = new JsonParser('Schema/'.$this->argument('module').'/'.$this->getModelName().'.json');
+        $data = $parser->get();
+        $fillable = collect($data[$this->getModelName()])->keys()->toArray();
+        if (!is_null($fillable)) {
+            $arrays = (is_string($fillable)) ? explode(',', $fillable) : $fillable;
+            return json_encode($arrays);
         }
         return '[]';
     }

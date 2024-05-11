@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\JsonSchemaController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\JwtAuthMiddleware;
@@ -19,5 +20,5 @@ Route::group([
 Route::get('dashboard', function() {
     return response()->json(['message' => 'Welcome to dashboard'], 200);
 });
-
+Route::post('jsons', [JsonSchemaController::class, 'createJsonSchema']);
 ?>

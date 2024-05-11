@@ -22,17 +22,28 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function login(Request $request)
-    {
+    public function login(Request $request){
+        try{
+            $credentials = request(['email', 'password']);
+            $validateUser = Validator::make($credentials, [
+                'email' => 'required',
+                'password' => 'required',
+            ]);
+            
+            if($validateUser->fails()){
+                return response()->json(['error' => 'email or password is missing'], 400);
+            }
+            
+            //  dd(Auth::attempt($credentials));
+            if (!$token = Auth::attempt($credentials)) {
+                return response()->json(['error' => 'invalid login credentials'], 401);
+            }
 
-
-        $credentials = request(['email', 'password']);
-
-        if (!$token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'invalid login credentials'], 401);
+            return JsonResponse::successResponse([], 'Logged in successfully', 200, $token);
         }
-
-        return JsonResponse::successResponse([], 'Logged in successfully', 200, $token);
+        catch(\Throwable $th){
+            throw new \Exception($th->getMessage());
+        }
     }
 
     public function register(Request $request)

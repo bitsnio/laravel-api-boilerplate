@@ -13,7 +13,7 @@ class ReadJsonCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'schema:read-jsons';
+    protected $signature = 'schema:read-jsons {module}';
 
     /**
      * The console command description.
@@ -28,13 +28,27 @@ class ReadJsonCommand extends Command
     public function handle()
     {
         $this->info('Reading directory for json files.....');
-        $files = File::files('Schema');
-        foreach ($files as $file) {
-            $jsonData = file_get_contents('Schema/'.$file->getFilename());
-            $data = json_decode($jsonData, true);
-            Artisan::call('module:make-All '.$data['class'].' '.$data['module']);
-            $this->info('Files created for class '.$data['class'].'.....');
+        $path = 'Schema/'.$this->argument('module').'/';
+        if(!is_dir($path)) $this->error('Module '.$this->argument('module').' not found');
+
+        $files = File::files($path);
+
+        $filteredFiles = array_filter($files, function ($file) {
+            // Get the file name
+            $fileName = pathinfo($file, PATHINFO_FILENAME);
+        
+            // Check if the file name does not start with a timestamp (YYYY-MM-DD_HH-MM-SS)
+            return !preg_match('/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_/', $fileName);
+        });
+
+        foreach ($filteredFiles as $file) {
+            $name = pathinfo($file, PATHINFO_FILENAME);
+            Artisan::call('module:make-All '.$name.' '.$this->argument('module'));
+            $this->info('Files created for sub-module '.$name.'.....');
+            $timestamp = date('Y-m-d_H-i-s');
+            $renameFile = $path.$timestamp.'_'.$file->getFilename();
+            File::move($path.$file->getFilename(), $renameFile);
         }
-        //
+        
     }
 }
