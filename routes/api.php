@@ -20,5 +20,5 @@ Route::group([
 Route::get('dashboard', function() {
     return response()->json(['message' => 'Welcome to dashboard'], 200);
 });
-Route::post('jsons', [JsonSchemaController::class, 'createJsonSchema']);
+Route::post('json-schemas', [JsonSchemaController::class, 'createJsonSchema']);
 ?>
