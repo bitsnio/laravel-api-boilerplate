@@ -8,7 +8,7 @@ use $MODULE_NAMESPACE$\$MODULE$\Database\factories\$NAME$Factory;
 
 class $CLASS$ extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

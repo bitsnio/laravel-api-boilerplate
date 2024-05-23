@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
+use App\Http\Middleware\JwtAuthMiddleware;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -19,9 +22,17 @@ class User extends Authenticatable implements JWTSubject
      * @var array<int, string>
      */
     protected $fillable = [
+        'user_type',
         'name',
         'email',
         'password',
+        'company_id',
+        'main_module_id',
+        'role',
+        'is_deleted',
+        'created_by',
+        'updated_by',
+        'deleted_by'
     ];
 
     /**

@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Modules\HMS\App\Utilities\Helper;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+
 
 
 class AuthController extends Controller
@@ -23,26 +27,57 @@ class AuthController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function login(Request $request){
-        try{
-            $credentials = request(['email', 'password']);
-            $validateUser = Validator::make($credentials, [
+        // try{
+        //     $credentials = request(['email', 'password']);
+        //     $validateUser = Validator::make($credentials, [
+        //         'email' => 'required',
+        //         'password' => 'required',
+        //     ]);
+            
+        //     if($validateUser->fails()){
+        //         return response()->json(['error' => 'email or password is missing'], 400);
+        //     }
+            
+        //     //  dd(Auth::attempt($credentials));
+        //     if (!$token = Auth::attempt($credentials)) {
+        //         return response()->json(['error' => 'invalid login credentials'], 401);
+        //     }
+
+        //     return JsonResponse::successResponse([], 'Logged in successfully', 200, $token);
+        // }
+        // catch(\Throwable $th){
+        //     throw new \Exception($th->getMessage());
+        // }
+        try
+        {
+            $input = $request->only('email', 'password');
+            
+            $validateUser = Validator::make($input, [
                 'email' => 'required',
                 'password' => 'required',
             ]);
             
             if($validateUser->fails()){
-                return response()->json(['error' => 'email or password is missing'], 400);
+                return  Helper::errorResponse(Helper::validationErrorsToString($validateUser->errors()),400);
             }
             
-            //  dd(Auth::attempt($credentials));
-            if (!$token = Auth::attempt($credentials)) {
-                return response()->json(['error' => 'invalid login credentials'], 401);
+            if (! $token = JWTAuth::attempt($input)) {
+                return  Helper::errorResponse("Invalid login credentials", 400);
             }
-
-            return JsonResponse::successResponse([], 'Logged in successfully', 200, $token);
-        }
-        catch(\Throwable $th){
-            throw new \Exception($th->getMessage());
+            
+            $user = User::where('email', $request->email)->first();
+            $customClaims = ['user_id' => $user->id, 'user_name' => $user->name, 'company_id' => $user->company_id];
+            $token = JWTAuth::claims($customClaims)->attempt($input);
+            // dd($user);
+            $data = Helper::usersModules( $user->id);
+            return Helper::successResponse($data,'User Logged In Successfully',200,$token);
+         
+        } 
+        catch (JWTException $e) {
+                return Helper::errorResponse($e->getMessage());
+            }
+        catch (\Throwable $th) {
+            return Helper::errorResponse($th->getMessage());
         }
     }
 

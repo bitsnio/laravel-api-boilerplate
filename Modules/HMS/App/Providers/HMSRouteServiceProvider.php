@@ -3,9 +3,9 @@
 namespace Modules\HMS\App\Providers;
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
 
-class RouteServiceProvider extends ServiceProvider
+class HMSRouteServiceProvider extends RouteServiceProvider
 {
     /**
      * The module namespace to assume when generating URLs to actions.

@@ -29,7 +29,7 @@ class HMSServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->register(RouteServiceProvider::class);
+        $this->app->register(HMSRouteServiceProvider::class);
     }
 
     /**
@@ -104,8 +104,8 @@ class HMSServiceProvider extends ServiceProvider
     {
         $paths = [];
         foreach (config('view.paths') as $path) {
-            if (is_dir($path.'/modules/'.$this->moduleNameLower)) {
-                $paths[] = $path.'/modules/'.$this->moduleNameLower;
+            if (is_dir($path.'modules/'.$this->moduleNameLower)) {
+                $paths[] = $path.'modules/'.$this->moduleNameLower;
             }
         }
 

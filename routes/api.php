@@ -3,7 +3,6 @@
 use App\Http\Controllers\API\JsonSchemaController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\JwtAuthMiddleware;
 
 Route::group([
     'prefix' => 'auth'

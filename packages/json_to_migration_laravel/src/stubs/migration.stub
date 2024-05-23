@@ -17,6 +17,7 @@ class {{migrationName}} extends Migration
             $table->id();
             {{methods}}
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

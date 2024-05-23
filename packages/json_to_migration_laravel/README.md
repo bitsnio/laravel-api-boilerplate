@@ -78,6 +78,7 @@ class CreatePostsTable extends Migration
             $table->boolean("active")->default(false);
             $table->foreignId("user_id")->nullable(true)->constrained()->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
