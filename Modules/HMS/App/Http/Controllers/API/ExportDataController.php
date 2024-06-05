@@ -24,17 +24,18 @@ class ExportDataController extends Controller
     {
         try {
             $request->validate([
-                'table' => 'required',
+                'table_name' => 'required',
                 'where' => 'sometimes|string'
             ]);
-
-
-            $table = $request->input('table');
+            
+            
+            $table = $request->input('table_name');
             $where = $request->input('where');
-
+            
             $data = $this->$table($where, $table);
             
             $export = new ExportData($data);
+            dd($export->toArray());
 
             return Excel::download($export, "{$table}_export.xlsx");
         } catch (Throwable $th) {
