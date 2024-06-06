@@ -1,5 +1,5 @@
 <?php
-namespace Modules\HMS\App\Core;
+namespace Modules\HMS\Core;
 
 use Modules\HMS\App\Http\Resources\CheckInResource;
 use Modules\HMS\App\Models\AssignedAdditionalServices;
