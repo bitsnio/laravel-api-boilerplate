@@ -13,7 +13,6 @@ return [
     | Default module namespace.
     |
     */
-
     'namespace' => 'Modules',
 
     /*
@@ -24,10 +23,9 @@ return [
     | Default module stubs.
     |
     */
-
     'stubs' => [
         'enabled' => false,
-        'path' => base_path('vendor/bitsnio/laravel-modules/src/Commands/stubs'),
+        'path' => base_path( 'vendor/bitsnio/laravel-modules/src/Commands/stubs' ),
         'files' => [
             'routes/web' => 'routes/web.php',
             'routes/api' => 'routes/api.php',
@@ -41,13 +39,13 @@ return [
             'package' => 'package.json',
         ],
         'replacements' => [
-            'routes/web' => ['LOWER_NAME', 'STUDLY_NAME', 'MODULE_NAMESPACE', 'CONTROLLER_NAMESPACE'],
-            'routes/api' => ['LOWER_NAME', 'STUDLY_NAME'],
-            'vite' => ['LOWER_NAME', 'STUDLY_NAME'],
-            'json' => ['LOWER_NAME', 'STUDLY_NAME', 'MODULE_NAMESPACE', 'PROVIDER_NAMESPACE'],
-            'views/index' => ['LOWER_NAME'],
-            'views/master' => ['LOWER_NAME', 'STUDLY_NAME'],
-            'scaffold/config' => ['STUDLY_NAME'],
+            'routes/web' => [ 'LOWER_NAME', 'STUDLY_NAME', 'MODULE_NAMESPACE', 'CONTROLLER_NAMESPACE' ],
+            'routes/api' => [ 'LOWER_NAME', 'STUDLY_NAME', 'MODULE_NAMESPACE', 'CONTROLLER_NAMESPACE' ],
+            'vite' => [ 'LOWER_NAME', 'STUDLY_NAME' ],
+            'json' => [ 'LOWER_NAME', 'STUDLY_NAME', 'MODULE_NAMESPACE', 'PROVIDER_NAMESPACE' ],
+            'views/index' => [ 'LOWER_NAME' ],
+            'views/master' => [ 'LOWER_NAME', 'STUDLY_NAME' ],
+            'scaffold/config' => [ 'STUDLY_NAME' ],
             'composer' => [
                 'LOWER_NAME',
                 'STUDLY_NAME',
@@ -56,6 +54,7 @@ return [
                 'AUTHOR_EMAIL',
                 'MODULE_NAMESPACE',
                 'PROVIDER_NAMESPACE',
+                'APP_FOLDER_NAME',
             ],
         ],
         'gitkeep' => true,
@@ -70,8 +69,8 @@ return [
         | This path will also be added automatically to the list of scanned folders.
         |
         */
+        'modules' => base_path( 'Modules' ),
 
-        'modules' => base_path('Modules'),
         /*
         |--------------------------------------------------------------------------
         | Modules assets path
@@ -80,8 +79,8 @@ return [
         | Here you may update the modules' assets path.
         |
         */
-
         'assets' => public_path('modules'),
+
         /*
         |--------------------------------------------------------------------------
         | The migrations' path
@@ -91,8 +90,18 @@ return [
         | the migration files?
         |
         */
+        'migration' => base_path( 'database/migrations' ),
 
-        'migration' => base_path('database/migrations'),
+        /*
+        |--------------------------------------------------------------------------
+        | The app path
+        |--------------------------------------------------------------------------
+        |
+        | app folder name
+        | for example can change it to 'src' or 'App'
+        */
+        'app_folder' => 'app/',
+
         /*
         |--------------------------------------------------------------------------
         | Generator path
@@ -101,35 +110,61 @@ return [
         | Setting the generate key to false will not generate that folder
         */
         'generator' => [
-            'config' => ['path' => 'config', 'generate' => true],
-            'command' => ['path' => 'App/Console', 'generate' => false],
-            'channels' => ['path' => 'App/Broadcasting', 'generate' => false],
-            'migration' => ['path' => 'Database/migrations', 'generate' => false],
-            'seeder' => ['path' => 'Database/Seeders', 'generate' => true],
-            'factory' => ['path' => 'Database/Factories', 'generate' => false],
-            'model' => ['path' => 'App/Models', 'generate' => false],
-            'observer' => ['path' => 'App/Observers', 'generate' => false],
-            'routes' => ['path' => 'routes', 'generate' => true],
-            'controller' => ['path' => 'App/Http/Controllers', 'generate' => true],
-            'filter' => ['path' => 'App/Http/Middleware', 'generate' => false],
-            'request' => ['path' => 'App/Http/Requests', 'generate' => false],
-            'provider' => ['path' => 'App/Providers', 'generate' => true],
-            'assets' => ['path' => 'resources/assets', 'generate' => false],
-            'lang' => ['path' => 'lang', 'generate' => false],
-            'views' => ['path' => 'resources/views', 'generate' => true],
-            'test' => ['path' => 'Tests/Unit', 'generate' => false],
-            'test-feature' => ['path' => 'Tests/Feature', 'generate' => false],
-            'repository' => ['path' => 'App/Repositories', 'generate' => false],
-            'event' => ['path' => 'App/Events', 'generate' => false],
-            'listener' => ['path' => 'App/Listeners', 'generate' => false],
-            'policies' => ['path' => 'App/Policies', 'generate' => false],
-            'rules' => ['path' => 'App/Rules', 'generate' => false],
-            'jobs' => ['path' => 'App/Jobs', 'generate' => false],
-            'emails' => ['path' => 'App/Emails', 'generate' => false],
-            'notifications' => ['path' => 'App/Notifications', 'generate' => false],
-            'resource' => ['path' => 'App/resources', 'generate' => false],
-            'component-view' => ['path' => 'resources/views/components', 'generate' => false],
-            'component-class' => ['path' => 'App/View/Components', 'generate' => false],
+            // app/
+            'actions' => [ 'path' => 'app/Actions', 'generate' => false ],
+            'casts' => [ 'path' => 'app/Casts', 'generate' => false ],
+            'channels' => [ 'path' => 'app/Broadcasting', 'generate' => false ],
+            'class' => [ 'path' => 'app/Classes', 'generate' => false ],
+            'command' => [ 'path' => 'app/Console', 'generate' => false ],
+            'component-class' => [ 'path' => 'app/View/Components', 'generate' => false ],
+            'emails' => [ 'path' => 'app/Emails', 'generate' => false ],
+            'event' => [ 'path' => 'app/Events', 'generate' => false ],
+            'enums' => [ 'path' => 'app/Enums', 'generate' => false ],
+            'exceptions' => [ 'path' => 'app/Exceptions', 'generate' => false ],
+            'jobs' => [ 'path' => 'app/Jobs', 'generate' => false ],
+            'helpers' => [ 'path' => 'app/Helpers', 'generate' => false ],
+            'interfaces' => [ 'path' => 'app/Interfaces', 'generate' => false ],
+            'listener' => [ 'path' => 'app/Listeners', 'generate' => false ],
+            'model' => [ 'path' => 'app/Models', 'generate' => false ],
+            'notifications' => [ 'path' => 'app/Notifications', 'generate' => false ],
+            'observer' => [ 'path' => 'app/Observers', 'generate' => false ],
+            'policies' => [ 'path' => 'app/Policies', 'generate' => false ],
+            'provider' => [ 'path' => 'app/Providers', 'generate' => true ],
+            'repository' => [ 'path' => 'app/Repositories', 'generate' => false ],
+            'resource' => [ 'path' => 'app/Transformers', 'generate' => false ],
+            'route-provider' => [ 'path' => 'app/Providers', 'generate' => true ],
+            'rules' => [ 'path' => 'app/Rules', 'generate' => false ],
+            'services' => [ 'path' => 'app/Services', 'generate' => false ],
+            'scopes' => [ 'path' => 'app/Models/Scopes', 'generate' => false ],
+            'traits' => [ 'path' => 'app/Traits', 'generate' => false ],
+
+            // app/Http/
+            'controller' => [ 'path' => 'app/Http/Controllers', 'generate' => true ],
+            'filter' => [ 'path' => 'app/Http/Middleware', 'generate' => false ],
+            'request' => [ 'path' => 'app/Http/Requests', 'generate' => false ],
+
+            // config/
+            'config' => [ 'path' => 'config', 'generate' => true ],
+
+            // database/
+            'factory' => [ 'path' => 'database/factories', 'generate' => true ],
+            'migration' => [ 'path' => 'database/migrations', 'generate' => true ],
+            'seeder' => [ 'path' => 'database/seeders', 'generate' => true ],
+
+            // lang/
+            'lang' => [ 'path' => 'lang', 'generate' => false ],
+
+            // resource/
+            'assets' => [ 'path' => 'resources/assets', 'generate' => true ],
+            'component-view' => [ 'path' => 'resources/views/components', 'generate' => false ],
+            'views' => [ 'path' => 'resources/views', 'generate' => true ],
+
+            // routes/
+            'routes' => [ 'path' => 'routes', 'generate' => true ],
+
+            // tests/
+            'test-feature' => [ 'path' => 'tests/Feature', 'generate' => true ],
+            'test-unit' => [ 'path' => 'tests/Unit', 'generate' => true ],
         ],
     ],
 
@@ -143,9 +178,9 @@ return [
     |
     */
     'commands' => ConsoleServiceProvider::defaultCommands()
-        ->merge([
-            // New commands go here
-        ])->toArray(),
+    ->merge( [
+        // New commands go here
+    ] )->toArray(),
 
     /*
     |--------------------------------------------------------------------------
@@ -156,13 +191,13 @@ return [
     | directory. This is useful if you host the package in packagist website.
     |
     */
-
     'scan' => [
         'enabled' => false,
         'paths' => [
-            base_path('vendor/*/*'),
+            base_path( 'vendor/*/*' ),
         ],
     ],
+
     /*
     |--------------------------------------------------------------------------
     | Composer File Template
@@ -171,12 +206,11 @@ return [
     | Here is the config for the composer.json file, generated by this package
     |
     */
-
     'composer' => [
-        'vendor' => 'bitsnio',
+        'vendor' => env( 'MODULE_VENDOR', 'bitsnio' ),
         'author' => [
-            'name' => 'Shehryar Azeem',
-            'email' => 'shehryar.azeemt@bitsnio.com',
+            'name' => env( 'MODULE_AUTHOR_NAME', 'Shehryar Azeem' ),
+            'email' => env( 'MODULE_AUTHOR_EMAIL', 'shehryar.azeemt@bitsnio.com' ),
         ],
         'composer-output' => false,
     ],
@@ -190,11 +224,12 @@ return [
     |
     */
     'cache' => [
-        'enabled' => false,
-        'driver' => 'file',
-        'key' => 'laravel-modules',
-        'lifetime' => 60,
+        'enabled' => env( 'MODULES_CACHE_ENABLED', false ),
+        'driver' => env( 'MODULES_CACHE_DRIVER', 'file' ),
+        'key' => env( 'MODULES_CACHE_KEY', 'laravel-modules' ),
+        'lifetime' => env( 'MODULES_CACHE_LIFETIME', 60 ),
     ],
+
     /*
     |--------------------------------------------------------------------------
     | Choose what laravel-modules will register as custom namespaces.
@@ -205,8 +240,8 @@ return [
     'register' => [
         'translations' => true,
         /**
-         * load files on boot or register method
-         */
+        * load files on boot or register method
+        */
         'files' => 'register',
     ],
 
@@ -222,7 +257,7 @@ return [
     'activators' => [
         'file' => [
             'class' => FileActivator::class,
-            'statuses-file' => base_path('modules_statuses.json'),
+            'statuses-file' => base_path( 'modules_statuses.json' ),
             'cache-key' => 'activator.installed',
             'cache-lifetime' => 604800,
         ],

@@ -2,12 +2,12 @@
 
 namespace Bitsnio\Modules\Contracts;
 
-interface PublisherInterface
-{
+interface PublisherInterface {
     /**
-     * Publish something.
-     *
-     * @return mixed
-     */
+    * Publish something.
+    *
+    * @return mixed
+    */
+
     public function publish();
 }

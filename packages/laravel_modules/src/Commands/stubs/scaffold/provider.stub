@@ -29,6 +29,7 @@ class $CLASS$ extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
     }
 
@@ -88,18 +89,23 @@ class $CLASS$ extends ServiceProvider
 
         $this->loadViewsFrom(array_merge($this->getPublishableViewPaths(), [$sourcePath]), $this->moduleNameLower);
 
-        $componentNamespace = str_replace('/', '\\', config('modules.namespace').'\\'.$this->moduleName.'\\'.config('modules.paths.generator.component-class.path'));
+        $componentNamespace = str_replace('/', '\\', config('modules.namespace').'\\'.$this->moduleName.'\\'.ltrim(config('modules.paths.generator.component-class.path'), config('modules.paths.app_folder', '')));
         Blade::componentNamespace($componentNamespace, $this->moduleNameLower);
     }
 
     /**
      * Get the services provided by the provider.
+     *
+     * @return array<string>
      */
     public function provides(): array
     {
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     private function getPublishableViewPaths(): array
     {
         $paths = [];

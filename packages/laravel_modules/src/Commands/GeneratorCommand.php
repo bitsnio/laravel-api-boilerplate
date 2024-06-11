@@ -5,9 +5,13 @@ namespace Bitsnio\Modules\Commands;
 use Illuminate\Console\Command;
 use Bitsnio\Modules\Exceptions\FileAlreadyExistException;
 use Bitsnio\Modules\Generators\FileGenerator;
+use Bitsnio\Modules\Module;
+use Bitsnio\Modules\Traits\PathNamespace;
 
 abstract class GeneratorCommand extends Command
 {
+    use PathNamespace;
+
     /**
      * The name of 'name' argument.
      *
@@ -36,23 +40,22 @@ abstract class GeneratorCommand extends Command
     {
         $path = str_replace('\\', '/', $this->getDestinationFilePath());
 
-            if (!$this->laravel['files']->isDirectory($dir = dirname($path))) {
-                $this->laravel['files']->makeDirectory($dir, 0777, true);
-            }
+        if (!$this->laravel['files']->isDirectory($dir = dirname($path))) {
+            $this->laravel['files']->makeDirectory($dir, 0777, true);
+        }
 
-            $contents = $this->getTemplateContents();
+        $contents = $this->getTemplateContents();
 
-            try {
-                $this->components->task("Generating file {$path}",function () use ($path,$contents) {
-                    $overwriteFile = $this->hasOption('force') ? $this->option('force') : false;
-                    (new FileGenerator($path, $contents))->withFileOverwrite($overwriteFile)->generate();
-                });
+        try {
+            $this->components->task("Generating file {$path}", function () use ($path, $contents) {
+                $overwriteFile = $this->hasOption('force') ? $this->option('force') : false;
+                (new FileGenerator($path, $contents))->withFileOverwrite($overwriteFile)->generate();
+            });
+        } catch (FileAlreadyExistException $e) {
+            $this->components->error("File : {$path} already exists.");
 
-            } catch (FileAlreadyExistException $e) {
-                $this->components->error("File : {$path} already exists.");
-
-                return E_ERROR;
-            }
+            return E_ERROR;
+        }
 
         return 0;
     }
@@ -86,20 +89,13 @@ abstract class GeneratorCommand extends Command
      */
     public function getClassNamespace($module)
     {
-        $extra = str_replace($this->getClass(), '', $this->argument($this->argumentName));
+        $path_namespace = $this->path_namespace(str_replace($this->getClass(), '', $this->argument($this->argumentName)));
 
-        $extra = str_replace('/', '\\', $extra);
+        return $this->module_namespace($module->getStudlyName(), $this->getDefaultNamespace() . ($path_namespace ? '\\' . $path_namespace : ''));
+    }
 
-        $namespace = $this->laravel['modules']->config('namespace');
-
-        $namespace .= '\\' . $module->getStudlyName();
-
-        $namespace .= '\\' . $this->getDefaultNamespace();
-
-        $namespace .= '\\' . $extra;
-
-        $namespace = str_replace('/', '\\', $namespace);
-
-        return trim($namespace, '\\');
+    public function module(?string $name = null): Module
+    {
+        return $this->laravel['modules']->findOrFail($name ?? $this->getModuleName());
     }
 }

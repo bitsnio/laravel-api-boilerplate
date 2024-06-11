@@ -53,11 +53,11 @@ class CheckedInMemberController extends Controller
             $checkIn = CheckIn::find($checkedInMember['check_in_id']);
             if($checkIn['check_in_status'] === 'checked_out'){
                 return Helper::errorResponse('checked out data cannot be edit');
-            }
+                }
             $rooms = collect($checkedInMember['guests'])->pluck('room_number')->unique()->toArray();
             if(strtolower($checkIn['check_in_type']) == 'event'){
                 $rooms = explode(',', $checkedInMember['guests'][0]['room_number']);
-            }
+                }
             $family_rooms = CheckedInMembers::where('check_in_id', $checkedInMember['check_in_id'])->get()->pluck('room_number')->unique()->toArray();
             $requested_rooms = RoomList::whereIn('id', $rooms)->get()->toArray();
             $available_rooms = collect($requested_rooms)->where('room_status', 'available')->pluck('id')->toArray();
@@ -118,7 +118,7 @@ class CheckedInMemberController extends Controller
             $return_data = CheckIn::with(['guests.rooms', 'properties'])->where('id', $checkedInMember['check_in_id'])
             ->whereHas('properties', function ($q) use ($user) {
                 $q->where('company_id', '=', $user->company_id);
-                $q->where('is_deleted', '=', 0);
+                // $q->where('is_deleted', '=', 0);
             })->get();
             DB::commit();
             return Helper::successResponse(CheckInResource::collection($return_data), 'Guest added successfuly');

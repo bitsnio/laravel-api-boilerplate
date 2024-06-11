@@ -43,7 +43,6 @@ class PaymentController extends Controller {
     */
 
     public function store( StorePaymentRequest $request ) {
-        dd( $request->toArray() );
         DB::beginTransaction();
         try {
             $payment = $request->validated();
@@ -61,7 +60,6 @@ class PaymentController extends Controller {
             $payment[ 'created_by' ] = $user->id;
             // $record = Payment::create( $payment );
             if ( strtolower( $payment[ 'payment_method' ] ) == 'adjustment' ) {
-                dd( 'hit' );
                 $advance = AdvancePayment::where( 'property_id', $payment[ 'property_id' ] )->get()->toArray();
                 if ( empty( $advance ) ) {
                     return Helper::errorResponse( 'No advance payment found against the selected property' );
@@ -94,6 +92,7 @@ class PaymentController extends Controller {
             if ( $return[ 0 ][ 'properties' ] == null ) {
                 unset( $return[ 0 ][ 'properties' ] );
             }
+
             DB::commit();
             return Helper::successResponse( ReceiptResource::collection( $return ) );
         } catch ( \Throwable $th ) {

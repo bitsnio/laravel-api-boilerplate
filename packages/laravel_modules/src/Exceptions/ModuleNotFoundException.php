@@ -2,6 +2,5 @@
 
 namespace Bitsnio\Modules\Exceptions;
 
-class ModuleNotFoundException extends \Exception
-{
+class ModuleNotFoundException extends \Exception {
 }

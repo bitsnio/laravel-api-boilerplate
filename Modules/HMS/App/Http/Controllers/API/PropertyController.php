@@ -71,7 +71,6 @@ class PropertyController extends Controller
     {
         DB::beginTransaction();
         try { 
-            
             $property = $request->validated();
             $userId = JWTAuth::parseToken()->authenticate();
             $property["created_by"] = $userId->id;

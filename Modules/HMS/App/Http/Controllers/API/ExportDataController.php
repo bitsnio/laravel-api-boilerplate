@@ -4,7 +4,7 @@ namespace Modules\HMS\App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\ExportData;
+use Modules\HMS\Exports\ExportData;
 use Modules\HMS\App\Http\Controllers\Controller;
 use Modules\HMS\App\Utilities\Helper;
 use Illuminate\Support\Facades\DB;
@@ -28,15 +28,13 @@ class ExportDataController extends Controller
                 'where' => 'sometimes|string'
             ]);
             
-            
             $table = $request->input('table_name');
             $where = $request->input('where');
             
             $data = $this->$table($where, $table);
+            // dd($data);
             
             $export = new ExportData($data);
-            dd($export->toArray());
-
             return Excel::download($export, "{$table}_export.xlsx");
         } catch (Throwable $th) {
             return Helper::errorResponse($th->getMessage());

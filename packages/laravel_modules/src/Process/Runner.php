@@ -5,26 +5,24 @@ namespace Bitsnio\Modules\Process;
 use Bitsnio\Modules\Contracts\RepositoryInterface;
 use Bitsnio\Modules\Contracts\RunableInterface;
 
-class Runner implements RunableInterface
-{
+class Runner implements RunableInterface {
     /**
-     * The module instance.
-     * @var RepositoryInterface
-     */
+    * The module instance.
+    * @var RepositoryInterface
+    */
     protected $module;
 
-    public function __construct(RepositoryInterface $module)
-    {
+    public function __construct( RepositoryInterface $module ) {
         $this->module = $module;
     }
 
     /**
-     * Run the given command.
-     *
-     * @param string $command
-     */
-    public function run($command)
-    {
-        passthru($command);
+    * Run the given command.
+    *
+    * @param string $command
+    */
+
+    public function run( $command ) {
+        passthru( $command );
     }
 }

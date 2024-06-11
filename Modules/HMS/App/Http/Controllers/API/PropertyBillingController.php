@@ -27,13 +27,13 @@ class PropertyBillingController extends Controller
     {
         try { 
             $response = $this->getReceivables(null, $request);
-            dd($response);
+            // dd($response);
             if(isset($response['data']['error'])){Helper::errorResponse($response['data']['error']);}
             return (isset($response['error'])) ? Helper::errorResponse($response['error']):Helper::successResponse(['extra_fields' => $response['extra_fields'], 'data' => PropertyBillingResource::collection($response['data'])]);
-        }
-        catch (\Throwable $th) {
-            return Helper::errorResponse($th->getMessage());
-        }
+            }
+            catch (\Throwable $th) {
+                return Helper::errorResponse($th->getMessage());
+                }
     }
 
     /**
@@ -251,7 +251,6 @@ class PropertyBillingController extends Controller
                 $q->where('company_id', '=', $user->company_id);
             });
             
-            dd($d);
             if($request != null && $request->has('bound_country'))$d->where('bound_country', $request->input('bound_country'));
             if($request != null && $request->has('start_date'))$d->where('check_out_date', '>=' ,$request->input('start_date'));
             if($request != null && $request->has('end_date'))$d->where('check_out_date', '<=' ,$request->input('end_date'));

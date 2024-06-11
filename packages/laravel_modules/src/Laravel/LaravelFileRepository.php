@@ -4,13 +4,12 @@ namespace Bitsnio\Modules\Laravel;
 
 use Bitsnio\Modules\FileRepository;
 
-class LaravelFileRepository extends FileRepository
-{
+class LaravelFileRepository extends FileRepository {
     /**
-     * {@inheritdoc}
-     */
-    protected function createModule(...$args)
-    {
-        return new Module(...$args);
+    * {
+        @inheritdoc}
+        */
+        protected function createModule( ...$args ) {
+            return new Module( ...$args );
+        }
     }
-}

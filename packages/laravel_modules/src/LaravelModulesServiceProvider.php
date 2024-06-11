@@ -2,6 +2,8 @@
 
 namespace Bitsnio\Modules;
 
+use Composer\InstalledVersions;
+use Illuminate\Foundation\Console\AboutCommand;
 use Bitsnio\Modules\Contracts\RepositoryInterface;
 use Bitsnio\Modules\Exceptions\InvalidActivatorClass;
 use Bitsnio\Modules\Support\Stub;
@@ -15,6 +17,10 @@ class LaravelModulesServiceProvider extends ModulesServiceProvider
     {
         $this->registerNamespaces();
         $this->registerModules();
+
+        AboutCommand::add('Laravel-Modules', [
+            'Version' => fn () => InstalledVersions::getPrettyVersion('Bitsnio/laravel-modules'),
+        ]);
     }
 
     /**

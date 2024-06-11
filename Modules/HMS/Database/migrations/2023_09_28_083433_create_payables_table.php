@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('days');
             $table->string('uom');
             $table->float('total_amount');
+            $table->boolean('merged')->default(0);
             $table->boolean('payment_status')->default(0);         
             $table->integer('created_by');
             $table->integer('updated_by')->default(0);

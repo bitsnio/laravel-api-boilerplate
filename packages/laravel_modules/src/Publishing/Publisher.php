@@ -7,189 +7,188 @@ use Bitsnio\Modules\Contracts\PublisherInterface;
 use Bitsnio\Modules\Contracts\RepositoryInterface;
 use Bitsnio\Modules\Module;
 
-abstract class Publisher implements PublisherInterface
-{
+abstract class Publisher implements PublisherInterface {
     /**
-     * The name of module will used.
-     *
-     * @var string
-     */
+    * The name of module will used.
+    *
+    * @var string
+    */
     protected $module;
 
     /**
-     * The modules repository instance.
-     * @var RepositoryInterface
-     */
+    * The modules repository instance.
+    * @var RepositoryInterface
+    */
     protected $repository;
 
     /**
-     * The laravel console instance.
-     *
-     * @var \Illuminate\Console\Command
-     */
+    * The laravel console instance.
+    *
+    * @var \Illuminate\Console\Command
+    */
     protected $console;
 
     /**
-     * The success message will displayed at console.
-     *
-     * @var string
-     */
+    * The success message will displayed at console.
+    *
+    * @var string
+    */
     protected $success;
 
     /**
-     * The error message will displayed at console.
-     *
-     * @var string
-     */
+    * The error message will displayed at console.
+    *
+    * @var string
+    */
     protected $error = '';
 
     /**
-     * Determine whether the result message will shown in the console.
-     *
-     * @var bool
-     */
+    * Determine whether the result message will shown in the console.
+    *
+    * @var bool
+    */
     protected $showMessage = true;
 
     /**
-     * The constructor.
-     *
-     * @param Module $module
-     */
-    public function __construct(Module $module)
-    {
+    * The constructor.
+    *
+    * @param Module $module
+    */
+
+    public function __construct( Module $module ) {
         $this->module = $module;
     }
 
     /**
-     * Show the result message.
-     *
-     * @return self
-     */
-    public function showMessage()
-    {
+    * Show the result message.
+    *
+    * @return self
+    */
+
+    public function showMessage() {
         $this->showMessage = true;
 
         return $this;
     }
 
     /**
-     * Hide the result message.
-     *
-     * @return self
-     */
-    public function hideMessage()
-    {
+    * Hide the result message.
+    *
+    * @return self
+    */
+
+    public function hideMessage() {
         $this->showMessage = false;
 
         return $this;
     }
 
     /**
-     * Get module instance.
-     *
-     * @return \Bitsnio\Modules\Module
-     */
-    public function getModule()
-    {
+    * Get module instance.
+    *
+    * @return \Bitsnio\Modules\Module
+    */
+
+    public function getModule() {
         return $this->module;
     }
 
     /**
-     * Set modules repository instance.
-     * @param RepositoryInterface $repository
-     * @return $this
-     */
-    public function setRepository(RepositoryInterface $repository)
-    {
+    * Set modules repository instance.
+    * @param RepositoryInterface $repository
+    * @return $this
+    */
+
+    public function setRepository( RepositoryInterface $repository ) {
         $this->repository = $repository;
 
         return $this;
     }
 
     /**
-     * Get modules repository instance.
-     *
-     * @return RepositoryInterface
-     */
-    public function getRepository()
-    {
+    * Get modules repository instance.
+    *
+    * @return RepositoryInterface
+    */
+
+    public function getRepository() {
         return $this->repository;
     }
 
     /**
-     * Set console instance.
-     *
-     * @param \Illuminate\Console\Command $console
-     *
-     * @return $this
-     */
-    public function setConsole(Command $console)
-    {
+    * Set console instance.
+    *
+    * @param \Illuminate\Console\Command $console
+    *
+    * @return $this
+    */
+
+    public function setConsole( Command $console ) {
         $this->console = $console;
 
         return $this;
     }
 
     /**
-     * Get console instance.
-     *
-     * @return \Illuminate\Console\Command
-     */
-    public function getConsole()
-    {
+    * Get console instance.
+    *
+    * @return \Illuminate\Console\Command
+    */
+
+    public function getConsole() {
         return $this->console;
     }
 
     /**
-     * Get laravel filesystem instance.
-     *
-     * @return \Illuminate\Filesystem\Filesystem
-     */
-    public function getFilesystem()
-    {
+    * Get laravel filesystem instance.
+    *
+    * @return \Illuminate\Filesystem\Filesystem
+    */
+
+    public function getFilesystem() {
         return $this->repository->getFiles();
     }
 
     /**
-     * Get destination path.
-     *
-     * @return string
-     */
+    * Get destination path.
+    *
+    * @return string
+    */
     abstract public function getDestinationPath();
 
     /**
-     * Get source path.
-     *
-     * @return string
-     */
+    * Get source path.
+    *
+    * @return string
+    */
     abstract public function getSourcePath();
 
     /**
-     * Publish something.
-     */
-    public function publish()
-    {
-        if (!$this->console instanceof Command) {
+    * Publish something.
+    */
+
+    public function publish() {
+        if ( !$this->console instanceof Command ) {
             $message = "The 'console' property must instance of \\Illuminate\\Console\\Command.";
 
-            throw new \RuntimeException($message);
+            throw new \RuntimeException( $message );
         }
 
-        if (!$this->getFilesystem()->isDirectory($sourcePath = $this->getSourcePath())) {
+        if ( !$this->getFilesystem()->isDirectory( $sourcePath = $this->getSourcePath() ) ) {
             return;
         }
 
-        if (!$this->getFilesystem()->isDirectory($destinationPath = $this->getDestinationPath())) {
-            $this->getFilesystem()->makeDirectory($destinationPath, 0775, true);
+        if ( !$this->getFilesystem()->isDirectory( $destinationPath = $this->getDestinationPath() ) ) {
+            $this->getFilesystem()->makeDirectory( $destinationPath, 0775, true );
         }
 
-        if ($this->getFilesystem()->copyDirectory($sourcePath, $destinationPath)) {
-            if ($this->showMessage === true) {
-                $this->console->components->task($this->module->getStudlyName(), fn() => true);
+        if ( $this->getFilesystem()->copyDirectory( $sourcePath, $destinationPath ) ) {
+            if ( $this->showMessage === true ) {
+                $this->console->components->task( $this->module->getStudlyName(), fn () => true );
             }
         } else {
-            $this->console->components->task($this->module->getStudlyName(), fn() => false);
-            $this->console->components->error($this->error);
+            $this->console->components->task( $this->module->getStudlyName(), fn () => false );
+            $this->console->components->error( $this->error );
         }
     }
 }

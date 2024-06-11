@@ -8,59 +8,58 @@ use Illuminate\Support\Str;
 use Bitsnio\Modules\Module;
 use Bitsnio\Modules\Support\Config\GenerateConfigReader;
 
-class Migrator
-{
+class Migrator {
     /**
-     * Module instance.
-     * @var Module
-     */
+    * Module instance.
+    * @var Module
+    */
     protected $module;
 
     /**
-     * Laravel Application instance.
-     *
-     * @var Application.
-     */
+    * Laravel Application instance.
+    *
+    * @var Application.
+    */
     protected $laravel;
 
     /**
-     * Optional subpath for specific migration file.
-     *
-     * @var string|null
-     * @example subpath 2000_01_01_000000_create_example_table.php
-     */
+    * Optional subpath for specific migration file.
+    *
+    * @var string|null
+    * @example subpath 2000_01_01_000000_create_example_table.php
+    */
     protected $subpath = '';
 
     /**
-     * The database connection to be used
-     *
-     * @var string
-     */
+    * The database connection to be used
+    *
+    * @var string
+    */
     protected $database = '';
 
     /**
-     * Create new instance.
-     * @param Module $module
-     * @param Application $application
-     * @param string|null $subpath
-     */
-    public function __construct(Module $module, Application $application, $subpath = null)
-    {
+    * Create new instance.
+    * @param Module $module
+    * @param Application $application
+    * @param string|null $subpath
+    */
+
+    public function __construct( Module $module, Application $application, $subpath = null ) {
         $this->module = $module;
         $this->laravel = $application;
         $this->subpath = $subpath;
     }
 
     /**
-     * Set the database connection to be used
-     *
-     * @param $database
-     *
-     * @return $this
-     */
-    public function setDatabase($database)
-    {
-        if (is_string($database) && $database) {
+    * Set the database connection to be used
+    *
+    * @param $database
+    *
+    * @return $this
+    */
+
+    public function setDatabase( $database ) {
+        if ( is_string( $database ) && $database ) {
             $this->database = $database;
         }
 
@@ -68,40 +67,40 @@ class Migrator
     }
 
     /**
-     * @return Module
-     */
-    public function getModule()
-    {
+    * @return Module
+    */
+
+    public function getModule() {
         return $this->module;
     }
 
     /**
-     * Get migration path.
-     *
-     * @return string
-     */
-    public function getPath()
-    {
-        $config = $this->module->get('migration');
+    * Get migration path.
+    *
+    * @return string
+    */
 
-        $migrationPath = GenerateConfigReader::read('migration');
-        $path = (is_array($config) && array_key_exists('path', $config)) ? $config['path'] : $migrationPath->getPath();
+    public function getPath() {
+        $config = $this->module->get( 'migration' );
 
-        return $this->module->getExtraPath($path);
+        $migrationPath = GenerateConfigReader::read( 'migration' );
+        $path = ( is_array( $config ) && array_key_exists( 'path', $config ) ) ? $config[ 'path' ] : $migrationPath->getPath();
+
+        return $this->module->getExtraPath( $path );
     }
 
     /**
-     * Get migration files.
-     *
-     * @param boolean $reverse
-     * @return array
-     */
-    public function getMigrations($reverse = false)
-    {
-        if (!empty($this->subpath)) {
-            $files = $this->laravel['files']->glob($this->getPath() . '/' . $this->subpath);
+    * Get migration files.
+    *
+    * @param boolean $reverse
+    * @return array
+    */
+
+    public function getMigrations( $reverse = false ) {
+        if ( !empty( $this->subpath ) ) {
+            $files = $this->laravel[ 'files' ]->glob( $this->getPath() . '/' . $this->subpath );
         } else {
-            $files = $this->laravel['files']->glob($this->getPath() . '/*_*.php');
+            $files = $this->laravel[ 'files' ]->glob( $this->getPath() . '/*_*.php' );
         }
 
         // Once we have the array of files in the directory we will just remove the
@@ -243,7 +242,7 @@ class Migrator
      */
     public function table()
     {
-        return $this->laravel['db']->connection($this->database ?: null)->table(config('database.migrations'));
+        return $this->laravel['db']->connection($this->database ?: null)->table(config('database.migrations.table'));
     }
 
     /**
@@ -327,6 +326,6 @@ class Migrator
      */
     public function getRan()
     {
-        return $this->table()->pluck('migration');
+        return $this->table()->pluck('migration' );
     }
 }

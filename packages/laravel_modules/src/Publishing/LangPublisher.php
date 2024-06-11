@@ -4,36 +4,35 @@ namespace Bitsnio\Modules\Publishing;
 
 use Bitsnio\Modules\Support\Config\GenerateConfigReader;
 
-class LangPublisher extends Publisher
-{
+class LangPublisher extends Publisher {
     /**
-     * Determine whether the result message will shown in the console.
-     *
-     * @var bool
-     */
+    * Determine whether the result message will shown in the console.
+    *
+    * @var bool
+    */
     protected $showMessage = false;
 
     /**
-     * Get destination path.
-     *
-     * @return string
-     */
-    public function getDestinationPath()
-    {
+    * Get destination path.
+    *
+    * @return string
+    */
+
+    public function getDestinationPath() {
         $name = $this->module->getLowerName();
 
-        return base_path("resources/lang/{$name}");
+        return base_path( "resources/lang/{$name}" );
     }
 
     /**
-     * Get source path.
-     *
-     * @return string
-     */
-    public function getSourcePath()
-    {
+    * Get source path.
+    *
+    * @return string
+    */
+
+    public function getSourcePath() {
         return $this->getModule()->getExtraPath(
-            GenerateConfigReader::read('lang')->getPath()
+            GenerateConfigReader::read( 'lang' )->getPath()
         );
     }
 }
