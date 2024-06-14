@@ -22,8 +22,6 @@ class UserRoleController extends Controller
         try 
         { 
             $user = JWTAuth::parseToken()->authenticate();
-            // return $user->company_id;
-            // dd($user->company_id);
             $data = $this->getUserRoles($user->company_id);
             dd($data->toArray());
             return Helper::successResponse(UserRoleResource::collection($data));

@@ -158,15 +158,24 @@ class CheckedInMemberController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCheckedInMemberRequest $request, CheckedInMembers $checkedInMember)
+    public function update(UpdateCheckedInMemberRequest $request,$id)
     {
         try 
         {
+            // dd($request->toArray());
             $data = $request->validated();
-            $checkIn = CheckIn::find($checkedInMember['check_in_id']);
+            $checkedInMember = CheckedInMembers::find($id);
+            if (!$checkedInMember) {
+                return Helper::errorResponse('Checked-in member not found');
+            }
+            $checkIn = CheckIn::find($checkedInMember->check_in_id);
+            if (!$checkIn) {
+                return Helper::errorResponse('Checked-in-id is deleted');
+            }
+            // dd(12);
             if($checkIn['check_in_status'] == 'checked_out'){
                 return Helper::errorResponse('checked out data cannot be updated');
-            }
+                }
             $user = JWTAuth::parseToken()->authenticate();
             $data['updated_by'] = $user->id;
             CheckedInMembers::where('id', $checkedInMember->id)->update($data);

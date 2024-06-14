@@ -200,6 +200,7 @@ class CheckInController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->validated();
+            dd($data);
             $data['check_in_time'] =  date("H:i:s", strtotime($data['check_in_time']));
             if(isset($data['expected_check_out_time']) && $data['expected_check_out_time'] != null) $data['expected_check_out_time'] =  date("H:i:s", strtotime($data['expected_check_out_time']));
             // if($checkIn['check_in_status'] == 'checked_out') return Helper::errorResponse('checked out data cannot be updated');
@@ -262,6 +263,7 @@ class CheckInController extends Controller
      */
     public function destroy(CheckIn $checkIn, $id)
     {
+        dd($checkIn->toArray(),$id);
         DB::beginTransaction();
         try {
             if($checkIn->check_in_status == 'checked_out'){

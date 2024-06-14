@@ -112,7 +112,7 @@ class AdditionalServicesController extends Controller {
 
     public function update( UpdateAdditionalServicesRequest $request, AdditionalServices $additionalServices ) {
         try {
-
+            // dd( $request->toArray() );
             $id = $request->additional_service;
             $additional_service_request = $request->validated();
 

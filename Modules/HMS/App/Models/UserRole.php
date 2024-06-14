@@ -11,7 +11,7 @@ use Modules\HMS\App\Models\SubModule;
 class UserRole extends Model {
     use HasFactory, SoftDeletes;
     protected $fillable = [ 'company_id', 'property_id', 'role_name', 'sub_module_id', 'icon', 'created_by', 'updated_by', 'deleted_by' ];
-    // protected $table = 'user_roles';
+    protected $table = 'user_roles';
     // Your table name
 
     protected $guarded = [];
