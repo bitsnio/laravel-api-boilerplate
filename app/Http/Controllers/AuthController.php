@@ -15,127 +15,123 @@ use Modules\HMS\App\Utilities\Helper;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
-
-
-class AuthController extends Controller
-{
+class AuthController extends Controller {
     use JsonResponse;
 
     /**
-     * Get a JWT via given credentials.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function login(Request $request){
-        // try{
-        //     $credentials = request(['email', 'password']);
-        //     $validateUser = Validator::make($credentials, [
+    * Get a JWT via given credentials.
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+
+    public function login( Request $request ) {
+        // try {
+        //     $credentials = request( [ 'email', 'password' ] );
+        //     $validateUser = Validator::make( $credentials, [
         //         'email' => 'required',
         //         'password' => 'required',
-        //     ]);
-            
-        //     if($validateUser->fails()){
-        //         return response()->json(['error' => 'email or password is missing'], 400);
-        //     }
-            
-        //     //  dd(Auth::attempt($credentials));
-        //     if (!$token = Auth::attempt($credentials)) {
-        //         return response()->json(['error' => 'invalid login credentials'], 401);
+        // ] );
+
+        //     if ( $validateUser->fails() ) {
+        //         return response()->json( [ 'error' => 'email or password is missing' ], 400 );
         //     }
 
-        //     return JsonResponse::successResponse([], 'Logged in successfully', 200, $token);
+        //     //  dd( Auth::attempt( $credentials ) );
+        //     if ( !$token = Auth::attempt( $credentials ) ) {
+        //         return response()->json( [ 'error' => 'invalid login credentials' ], 401 );
+        //     }
+
+        //     return JsonResponse::successResponse( [], 'Logged in successfully', 200, $token );
         // }
-        // catch(\Throwable $th){
-        //     throw new \Exception($th->getMessage());
+        // catch( \Throwable $th ) {
+        //     throw new \Exception( $th->getMessage() );
         // }
-        try
-        {
-            $input = $request->only('email', 'password');
-            
-            $validateUser = Validator::make($input, [
+        try {
+            $input = $request->only( 'email', 'password' );
+
+            $validateUser = Validator::make( $input, [
                 'email' => 'required',
                 'password' => 'required',
-            ]);
-            
-            if($validateUser->fails()){
-                return  Helper::errorResponse(Helper::validationErrorsToString($validateUser->errors()),400);
+            ] );
+            if ( $validateUser->fails() ) {
+                return  Helper::errorResponse( Helper::validationErrorsToString( $validateUser->errors() ), 400 );
             }
-            
-            if (! $token = JWTAuth::attempt($input)) {
-                return  Helper::errorResponse("Invalid login credentials", 400);
+
+            if ( ! $token = JWTAuth::attempt( $input ) ) {
+                return  Helper::errorResponse( 'Invalid login credentials', 400 );
             }
-            
-            $user = User::where('email', $request->email)->first();
-            $customClaims = ['user_id' => $user->id, 'user_name' => $user->name, 'company_id' => $user->company_id];
-            $token = JWTAuth::claims($customClaims)->attempt($input);
-            // dd($user);
-            $data = Helper::usersModules( $user->id);
-            return Helper::successResponse($data,'User Logged In Successfully',200,$token);
-         
-        } 
-        catch (JWTException $e) {
-                return Helper::errorResponse($e->getMessage());
-            }
-        catch (\Throwable $th) {
-            return Helper::errorResponse($th->getMessage());
+
+            $user = User::where( 'email', $request->email )->first();
+            $customClaims = [ 'user_id' => $user->id, 'user_name' => $user->name, 'company_id' => $user->company_id ];
+            $token = JWTAuth::claims( $customClaims )->attempt( $input );
+            // dd( $user );
+            $data = Helper::usersModules( $user->id );
+            return Helper::successResponse( $data, 'User Logged In Successfully', 200, $token );
+
+        } catch ( JWTException $e ) {
+            return Helper::errorResponse( $e->getMessage() );
+        } catch ( \Throwable $th ) {
+            return Helper::errorResponse( $th->getMessage() );
         }
     }
 
-    public function register(Request $request)
-    {
+    public function register( Request $request ) {
 
-        $input = $request->only('name', 'email', 'password', 'confirm_password');
+        $input = $request->only( 'name', 'email', 'password', 'confirm_password' );
 
-        $validator = Validator::make($input, [
+        $validator = Validator::make( $input, [
             'name' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
             'confirm_password' => 'required|same:password',
-        ]);
+        ] );
 
-        if ($validator->fails()) {
-            return JsonResponse::errorResponse($validator->errors());
+        if ( $validator->fails() ) {
+            return JsonResponse::errorResponse( $validator->errors() );
         }
 
-        $input['password'] = Hash::make($input['password']); // use bcrypt to hash the passwords
-        unset($input['c_password']); // excldue repeat_password
-        $user = User::create($input); // eloquent creation of data
+        $input[ 'password' ] = Hash::make( $input[ 'password' ] );
+        // use bcrypt to hash the passwords
+        unset( $input[ 'c_password' ] );
+        // excldue repeat_password
+        $user = User::create( $input );
+        // eloquent creation of data
 
-        $success['user'] = $user;
+        $success[ 'user' ] = $user;
 
-        return JsonResponse::successResponse($success, 'user registered successfully');
+        return JsonResponse::successResponse( $success, 'user registered successfully' );
     }
 
     /**
-     * Log the user out (Invalidate the token).
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function logout()
-    {
+    * Log the user out ( Invalidate the token ).
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+
+    public function logout() {
         Auth::logout();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return response()->json( [ 'message' => 'Successfully logged out' ] );
     }
 
     /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function refresh()
-    {
-        return JsonResponse::successResponse(Auth::refresh());
+    * Refresh a token.
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+
+    public function refresh() {
+        return JsonResponse::successResponse( Auth::refresh() );
     }
 
     /**
-     * Get the authenticated User.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function addRoles()
-    {
-        $role = Role::create(['name' => 'writer']);
-        $permission = Permission::create(['name' => 'edit articles']);
+    * Get the authenticated User.
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+
+    public function addRoles() {
+        $role = Role::create( [ 'name' => 'writer' ] );
+        $permission = Permission::create( [ 'name' => 'edit articles' ] );
     }
 }

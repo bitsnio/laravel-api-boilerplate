@@ -1,5 +1,5 @@
 <?php
-namespace Modules\HMS\App\Core;
+namespace Modules\HMS\Core;
 
 use Modules\HMS\App\Http\Controllers\API\CheckInController;
 use Modules\HMS\App\Http\Controllers\API\CheckOutController;

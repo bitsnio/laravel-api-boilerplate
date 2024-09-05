@@ -3,7 +3,7 @@
 namespace Modules\HMS\App\Http\Controllers\API;
 
 use Modules\HMS\App\Http\Controllers\Controller;
-use App\Models\UserRole;
+use Modules\HMS\App\Models\UserRole;
 use Modules\HMS\App\Http\Requests\StoreUserRoleRequest;
 use Modules\HMS\App\Http\Requests\UpdateUserRoleRequest;
 use Modules\HMS\App\Http\Resources\UserRoleResource;
@@ -23,7 +23,9 @@ class UserRoleController extends Controller
         { 
             $user = JWTAuth::parseToken()->authenticate();
             // return $user->company_id;
+            // dd($user->company_id);
             $data = $this->getUserRoles($user->company_id);
+            dd($data->toArray());
             return Helper::successResponse(UserRoleResource::collection($data));
         }
         catch (\Throwable $th) {

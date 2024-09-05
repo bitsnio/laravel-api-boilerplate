@@ -41,13 +41,12 @@ class CheckInController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            // dd($token['property_id']);
             $company_id = $user->company_id;
             $query = CheckIn::with(['guests.roomDetails', 'properties'])
                 ->whereHas('properties', function ($q) use ($company_id) {
                     $q->where('company_id', '=', $company_id);
                 });
-            if ($request->has('check_in_status')) {
+                if ($request->has('check_in_status')) {
                 $query->where('check_in_status', $request->input('check_in_status'));
             }
             if ($request->has('bound_country')) {
@@ -195,18 +194,19 @@ class CheckInController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCheckInRequest $request, CheckIn $checkIn)
+    public function update(UpdateCheckInRequest $request, $id)
     {
+    //  dd($request->property_id); 
         DB::beginTransaction();
         try {
             $data = $request->validated();
             $data['check_in_time'] =  date("H:i:s", strtotime($data['check_in_time']));
             if(isset($data['expected_check_out_time']) && $data['expected_check_out_time'] != null) $data['expected_check_out_time'] =  date("H:i:s", strtotime($data['expected_check_out_time']));
-            if($checkIn['check_in_status'] == 'checked_out') return Helper::errorResponse('checked out data cannot be updated');
+            // if($checkIn['check_in_status'] == 'checked_out') return Helper::errorResponse('checked out data cannot be updated');
             $user = JWTAuth::parseToken()->authenticate();
             if(isset($data['guestDetails']) && $data['guestDetails'] != null){
                 $guest_details = $data['guestDetails'];
-                $old_rooms = CheckedInMembers::where('check_in_id', $checkIn->id)->get()->pluck('room_number')->unique()->toArray();
+                $old_rooms = CheckedInMembers::where('check_in_id', $id)->get()->pluck('room_number')->unique()->toArray();
                 $current_rooms = collect($guest_details)->pluck('room_number')->unique()->toArray();
                 $new_rooms = array_diff($current_rooms, $old_rooms);
                 if(!empty($new_rooms)) return Helper::errorResponse('New rooms cannot be allocated, only family rooms are allowed');
@@ -216,29 +216,30 @@ class CheckInController extends Controller
                 if(is_array($guest_details)){
                     foreach($guest_details as $guest){
                         $guest['updated_by'] = $user->id;
-                        CheckedInMembers::where('check_in_id', $checkIn->id)->where('cnic_passport_number', $guest['cnic_passport_number'])->update($guest);
+                        CheckedInMembers::where('check_in_id', $id)->where('cnic_passport_number', $guest['cnic_passport_number'])->update($guest);
                     }
                 }
             }
             if(isset($data['selected_services']) && $data['selected_services'] != null){
-                $array1 = array_diff(explode(',', $checkIn['selected_services']),explode(',', $data['selected_services']));
-                $array2 = array_diff(explode(',', $data['selected_services']),explode(',', $checkIn['selected_services']));
+                $array1 = array_diff(explode(',', $request['selected_services']),explode(',', $data['selected_services']));
+                $array2 = array_diff(explode(',', $data['selected_services']),explode(',', $request['selected_services']));
                 $updated_services = array_merge($array1, $array2);
                 if(!empty($updated_services)){
-                    $assigned_service_ids = AssignedAdditionalServices::where('check_in_id', $checkIn['id'])->get()->pluck('id')->toArray();
+                    $assigned_service_ids = AssignedAdditionalServices::where('check_in_id', $id)->get()->pluck('id')->toArray();
                     if(!empty($assigned_service_ids)){
                         AssignedBillingTimeRules::whereIn('property_service_id', $assigned_service_ids)->delete();
-                        AssignedAdditionalServices::where('check_in_id', $checkIn['id'])->delete();
+                        AssignedAdditionalServices::where('check_in_id', $id)->delete();
                     }
                     $selected_services = explode(",", $data['selected_services']);
                     sort($selected_services);
                     foreach ($selected_services as $s_services) {
                         $additional_services = PropertyServices::find($s_services, ['id', 'service_name', 'basis_of_application', 'frequency', 'cost', 'selling_price']);
                         $additional_services['created_by'] = $user->id;
-                        $additional_services['check_in_id'] = $checkIn['id'];
-                        $additional_services['property_id'] = $checkIn['property_id'];
+                        $additional_services['check_in_id'] = $id;
+                        $additional_services['property_id'] = $request['property_id'];
+                        // dd($additional_services);
                         $billing_time_rules = PropertyServiceRules::where('property_service_id', $s_services)->get(['title', 'from', 'to', 'charge_compare_with', 'charge_percentage', 'apply_on'])->toArray();
-                        $a_id = AssignedAdditionalServices::create($additional_services->toArray());
+                        $a_id = AssignedAdditionalServices::create($additional_services);
                         $additional_fields_AS =  ['property_service_id' => $a_id->id, 'created_by' => $user->id];
                         $ABR = Helper::objectsToArray($billing_time_rules, $additional_fields_AS);
                         DB::table('assigned_billing_time_rules')->insert($ABR);
@@ -246,8 +247,8 @@ class CheckInController extends Controller
                 }
             }
             unset($data['guestDetails']);
-            CheckIn::where('id', $checkIn->id)->update($data);
-            $return = CheckIn::with('guests.roomDetails', 'properties')->where('id', $checkIn->id)->get();
+            CheckIn::where('id', $id)->update($data);
+            $return = CheckIn::with('guests.roomDetails', 'properties')->where('id', $id)->get();
             DB::commit();
             return Helper::successResponse(CheckInResource::collection($return), 'successfully updated');
         } catch (\Throwable $th) {
@@ -259,7 +260,7 @@ class CheckInController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CheckIn $checkIn)
+    public function destroy(CheckIn $checkIn, $id)
     {
         DB::beginTransaction();
         try {
@@ -267,18 +268,21 @@ class CheckInController extends Controller
                 return Helper::errorResponse('checked out data cannot be deleted');
             }
             $user = JWTAuth::parseToken()->authenticate();
-            $guests = CheckedInMembers::where('check_in_id', $checkIn->id)->get()->toArray();
-            CheckedInMembers::where('check_in_id', $checkIn->id)->update(['is_deleted' => 1, 'deleted_by' => $user->id]);
-            $assigned_services = AssignedAdditionalServices::where('check_in_id', $checkIn->id)->get()->toArray();
+            $checkIn = CheckIn::findOrFail( $id );
+            $guests = CheckedInMembers::where('check_in_id', $id)->get()->toArray();
+            CheckedInMembers::where('check_in_id', $id)->update([/*'is_deleted' => 1,*/ 'deleted_by' => $user->id]);
+            $assigned_services = AssignedAdditionalServices::where('check_in_id', $id)->get()->toArray();
             $assigned_service_ids = collect($assigned_services)->pluck('id')->toArray();
-            AssignedAdditionalServices::where('check_in_id', $checkIn->id)->update(['is_deleted' => 1, 'deleted_by' => $user->id]);
-            AssignedBillingTimeRules::whereIn('property_service_id', $assigned_service_ids)->update(['is_deleted' => 1, 'deleted_by' => $user->id]);
+            AssignedAdditionalServices::where('check_in_id', $id)->update([/**'is_deleted' => 1, */ 'deleted_by' => $user->id]);
+            AssignedBillingTimeRules::whereIn('property_service_id', $assigned_service_ids)->update([/**'is_deleted' => 1, */ 'deleted_by' => $user->id]);
             $room_ids = collect($guests)->pluck('room_number')->unique()->toArray();
             RoomList::whereIn('id', $room_ids)->update(['room_status' => 'available', 'updated_by' => $user->id, 'check_in_date' => null, 'check_out_date' => null]);
             // Set the is_deleted field to 1
-            $checkIn->is_deleted = 1;
+            // $checkIn->is_deleted = 1;
             $checkIn->deleted_by = $user->id;
             $checkIn->save();
+            $checkIn->delete();
+            // CheckIn::where( 'check_ins_id', $id )->delete();
             DB::commit();
             return Helper::successResponse('Successfully Deleted', 200);
             // return Helper::successResponse(response()->noContent());
@@ -601,6 +605,7 @@ class CheckInController extends Controller
     }
     //delete bulk checkins
     public function deleteCheckins(Request $request){
+        // dd($request->toArray());
         DB::beginTransaction();
         try {
 
@@ -614,15 +619,15 @@ class CheckInController extends Controller
                 return Helper::errorResponse('checked out data cannot be deleted');
             }
             $active_rooms = CheckedInMembers::whereIn('check_in_id', $request->checkin_ids)->get()->pluck('room_number')->unique()->toArray();
-            CheckedInMembers::whereIn('check_in_id', $request->checkin_ids)->update(['is_deleted' => 1, 'deleted_by' => $user->id]);
+            CheckedInMembers::whereIn('check_in_id', $request->checkin_ids)->update([/**'is_deleted' => 1, */ 'deleted_by' => $user->id]);
             $assigned_services = AssignedAdditionalServices::whereIn('check_in_id', $request->checkin_ids)->get()->toArray();
             $assigned_service_ids = collect($assigned_services)->pluck('id')->toArray();
-            AssignedAdditionalServices::whereIn('check_in_id', $request->checkin_ids)->update(['is_deleted' => 1, 'deleted_by' => $user->id]);
-            AssignedBillingTimeRules::whereIn('property_service_id', $assigned_service_ids)->update(['is_deleted' => 1, 'deleted_by' => $user->id]);
+            AssignedAdditionalServices::whereIn('check_in_id', $request->checkin_ids)->update([/**'is_deleted' => 1, */ 'deleted_by' => $user->id]);
+            AssignedBillingTimeRules::whereIn('property_service_id', $assigned_service_ids)->update([/**'is_deleted' => 1, */ 'deleted_by' => $user->id]);
             if(!empty($active_rooms)){
                 RoomList::whereIn('id', $active_rooms)->update(['room_status' => 'available', 'updated_by' => $user->id, 'check_in_date' => null, 'check_out_date' => null]);
             }
-            checkIn::whereIn('id', $request->checkin_ids)->update(['is_deleted' => 1, 'deleted_by' => $user->id]);
+            checkIn::whereIn('id', $request->checkin_ids)->update([/**'is_deleted' => 1, */ 'deleted_by' => $user->id]);
             DB::commit();
             return Helper::successResponse('Successfully Deleted', 200);
             // return Helper::successResponse(response()->noContent());

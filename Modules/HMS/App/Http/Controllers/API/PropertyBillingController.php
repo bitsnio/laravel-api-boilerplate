@@ -27,6 +27,7 @@ class PropertyBillingController extends Controller
     {
         try { 
             $response = $this->getReceivables(null, $request);
+            dd($response);
             if(isset($response['data']['error'])){Helper::errorResponse($response['data']['error']);}
             return (isset($response['error'])) ? Helper::errorResponse($response['error']):Helper::successResponse(['extra_fields' => $response['extra_fields'], 'data' => PropertyBillingResource::collection($response['data'])]);
         }
@@ -242,14 +243,15 @@ class PropertyBillingController extends Controller
             $fields = [];
             $d = CheckIn::with(['propertyBillings', 'property', 'guests'])
             ->whereHas('propertyBillings', function($q) use ($request, $ids){
-                    $q->whereColumn('check_in_id', 'check_ins.id');
-                    if($ids == null)$q->where('merged', 0);
-                    if($request != null && $request->has('payment_status'))$q->where('property_billings.payment_status', $request->input('payment_status'));
-                    if($request != null && $request->has('property_id'))$q->where('property_billings.property_id', $request->input('property_id'));
-                })->whereHas('property', function($q) use($user) {
-                    $q->where('company_id', '=', $user->company_id);
-                });
-                    
+                $q->whereColumn('check_in_id', 'check_ins.id');
+                if($ids == null)$q->where('merged', 0);
+                if($request != null && $request->has('payment_status'))$q->where('property_billings.payment_status', $request->input('payment_status'));
+                if($request != null && $request->has('property_id'))$q->where('property_billings.property_id', $request->input('property_id'));
+            })->whereHas('property', function($q) use($user) {
+                $q->where('company_id', '=', $user->company_id);
+            });
+            
+            dd($d);
             if($request != null && $request->has('bound_country'))$d->where('bound_country', $request->input('bound_country'));
             if($request != null && $request->has('start_date'))$d->where('check_out_date', '>=' ,$request->input('start_date'));
             if($request != null && $request->has('end_date'))$d->where('check_out_date', '<=' ,$request->input('end_date'));
@@ -281,7 +283,7 @@ class PropertyBillingController extends Controller
             $query = CheckIn::with(['payables', 'propertyBillings', 'guests.roomDetails', 'properties'])
             ->whereHas('properties', function ($q) use ($user) {
                 $q->where('company_id', '=', $user->company_id);
-                $q->where('is_deleted', '=', 0);
+                // $q->where('is_deleted', '=', 0);
             });
             $expanses = Expense::where('company_id', $user->company_id);
             if(!isset($request->start_date) || $request->start_date == null){

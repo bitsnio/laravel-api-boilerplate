@@ -84,6 +84,7 @@ class ReceiptController extends Controller
     {
         try{
             $receipt = $request->validated();
+            dd('hit');
             $user = JWTAuth::parseToken()->authenticate();
             $checkin_ids = [];
             $payload = [];
@@ -200,14 +201,18 @@ class ReceiptController extends Controller
     }
 
     public function getInvoiceReceipts(Request $request){
+        // dd($request->toArray());
         try{
+            $ids=$request->check_in_ids;
             if(!isset($request['receipt_id']) && $request['receipt_id'] == null){
                 return Helper::errorResponse('Receipt id not found');
             }
-            $record = Receipt::find($request['receipt_id']);
-            $ids = explode(',', $record['check_in_ids']);
+            // $record = Receipt::find($request['receipt_id']);
+            // $ids = explode(',', $record['check_in_ids']);
+            $record=$request->all();
             if($record['receipt_type'] == 'payable'){
                 $response = app(PayableController::class)->getPayables($ids);
+                // dd('hit');
                 if(isset($response['data']['error'])){Helper::errorResponse($response['data']['error']);}
                 return (isset($response['error'])) ? Helper::errorResponse($response['error']) : Helper::successResponse(PayableResource::collection($response['data']));
             }

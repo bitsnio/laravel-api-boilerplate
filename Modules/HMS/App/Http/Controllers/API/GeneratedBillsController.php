@@ -49,6 +49,7 @@ class GeneratedBillsController extends Controller
         try
         {
             $generatedBills = $request->validated();
+            // dd($generatedBills);
             $response = $this->generateMissingBills($generatedBills);
             return $response;
         }
