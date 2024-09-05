@@ -8,8 +8,15 @@ use Illuminate\Support\Str;
 use Bitsnio\Modules\Support\Config\GenerateConfigReader;
 use Bitsnio\Modules\Support\Stub;
 use Bitsnio\Modules\Traits\ModuleCommandTrait;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Modules\HMS\App\Models\SubModule;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Throwable;
 
 class MakeAllfilesCommand extends GeneratorCommand
 {
@@ -34,6 +41,8 @@ class MakeAllfilesCommand extends GeneratorCommand
      * @var string
      */
     protected $description = 'Create all files including model, migration, seeder, factory, controller and request file';
+
+    public $created_files = [];
 
     public function handle(): int
     {
@@ -92,40 +101,69 @@ class MakeAllfilesCommand extends GeneratorCommand
     }
 
     protected function handleAllOption(){
-        //handle request options
-        $requestName = "{$this->getModelName()}Request";
-        $this->call('module:make-request', array_filter([
-            'name' => $requestName,
-            'module' => $this->argument('module')
-        ]));
+        DB::beginTransaction();
+        try{
+            $base_path = base_path('Modules/'.$this->argument('module').'/');
+            $this->created_files[] = $base_path.'APP/Models/'.$this->getModelName().'.php';
+            //Create Request file
+            $requestName = "{$this->getModelName()}Request";
+            $this->call('module:make-request', array_filter([
+                'name' => $requestName,
+                'module' => $this->argument('module')
+            ]));
+            $this->created_files[] = $base_path.'App/HTTP/Requests/'.$requestName.'.php';
 
-        //handle factory options
-        $this->call('module:make-factory', array_filter([
-            'name' => $this->getModelName(),
-            'module' => $this->argument('module')
-        ]));
+            //create factory file
+            $this->call('module:make-factory', array_filter([
+                'name' => $this->getModelName(),
+                'module' => $this->argument('module')
+            ]));
+            $this->created_files[] = $base_path.'Database/Factories/'.$this->getModelName().'Factory.php';
 
-        //handle seeder options
-        $seedName = "{$this->getModelName()}Seeder";
-        $this->call('module:make-seed', array_filter([
-            'name' => $seedName,
-            'module' => $this->argument('module')
-        ]));
 
-        //handle controller options
-        $controllerName = "{$this->getModelName()}Controller";
-        $this->call('module:make-controller', array_filter([
-            'controller' => $controllerName,
-            '--api' => true,
-            'module' => $this->argument('module'),
+            //create seeder file
+            $seedName = "{$this->getModelName()}Seeder";
+            $this->call('module:make-seed', array_filter([
+                'name' => $seedName,
+                'module' => $this->argument('module')
+            ]));
+            $this->created_files[] =$base_path.'Database/Seeders/'.$seedName.'.php';
 
-        ]));
 
-        //handle migration options
-        $path = $this->laravel['modules']->getModulePath($this->getModuleName());
-        $generatorPath = GenerateConfigReader::read('migration');
-        $this->call('json:migrate', ['file' => 'Schema/'.$this->getModuleName().'/'.$this->getModelName().'.json', 'path' => $path . $generatorPath->getPath() . '/']);
+            //create controller file
+            $controllerName = "{$this->getModelName()}Controller";
+            $this->call('module:make-controller', array_filter([
+                'controller' => $controllerName,
+                '--api' => true,
+                'module' => $this->argument('module'),
 
+            ]));
+            $this->created_files[] = $base_path.'App/HTTP/Controllers/'.$controllerName.'.php';
+
+
+            //create migration file
+            $path = $this->laravel['modules']->getModulePath($this->getModuleName());
+            $generatorPath = GenerateConfigReader::read('migration');
+            $this->call('json:migrate', ['file' => 'Schema/'.$this->getModuleName().'/'.$this->getModelName().'.json', 'path' => $path . $generatorPath->getPath() . '/']);
+
+            $this->generatePermissions();
+
+            $this->createSubModule();
+
+            $this->generateRoute($controllerName);
+            DB::commit();
+        }
+        catch(Throwable $th){
+            DB::rollBack();
+            foreach ($this->created_files as $file) {
+                if (File::exists($file)) {
+                    File::delete($file);
+                    // $this->warn('Deleted: ' . $file);
+                }
+            }
+
+            throw new Exception('Failed to create resorce, actions reversed, try again, error :'.$th->getMessage());
+        }
 
     }
 
@@ -173,14 +211,18 @@ class MakeAllfilesCommand extends GeneratorCommand
      */
     private function getFillable()
     {
-        $parser = new JsonParser('Schema/'.$this->argument('module').'/'.$this->getModelName().'.json');
-        $data = $parser->get();
+        $data = $this->getFileContent();
         $fillable = collect($data[$this->getModelName()])->keys()->toArray();
         if (!is_null($fillable)) {
             $arrays = (is_string($fillable)) ? explode(',', $fillable) : $fillable;
             return json_encode($arrays);
         }
         return '[]';
+    }
+
+    public function getFileContent($get_module_info = false){
+        $parser = new JsonParser('Schema/'.$this->argument('module').'/'.$this->getModelName().'.json');
+        return $parser->get($get_module_info);
     }
 
     /**
@@ -194,5 +236,71 @@ class MakeAllfilesCommand extends GeneratorCommand
 
         return $module->config('paths.generator.model.namespace') ?: $module->config('paths.generator.model.path', 'Entities');
     }
-   
+
+    private function generateRoute($controllerName){
+        $name_space = "\nuse Modules\\".$this->argument('module')."\App\Http\Controllers\\".$controllerName.";";
+        $dynamic_route = "\nRoute::apiResource('".$this->createRouteName()."', ".$controllerName."::class);";
+        $route_file_path = base_path("Modules/".$this->argument('module')."/routes/api.php");
+        File::append($route_file_path, $name_space);
+        File::append($route_file_path, $dynamic_route);
+    }
+
+    private function createRouteName(){
+        return strtolower($this->argument('module'))."/".Str::plural(strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $this->getModelName())));
+    }
+
+    private function generatePermissions(){
+        if (!Schema::hasTable('permissions')) $this->info('Stoped generating permissions, table permissions not found.');
+        else{
+            DB::table('permissions')->insert([
+                ['name' => 'view '.$this->getModelName().'_'.$this->argument('module'), 'guard_name' => 'api', 'created_at' => now()],
+                ['name' => 'viewAny '.$this->getModelName().'_'.$this->argument('module'), 'guard_name' => 'api', 'created_at' => now()],
+                ['name' => 'create '.$this->getModelName().'_'.$this->argument('module'), 'guard_name' => 'api', 'created_at' => now()],
+                ['name' => 'update '.$this->getModelName().'_'.$this->argument('module'), 'guard_name' => 'api', 'created_at' => now()],
+                ['name' => 'delete '.$this->getModelName().'_'.$this->argument('module'), 'guard_name' => 'api', 'created_at' => now()],
+                ['name' => 'restore '.$this->getModelName().'_'.$this->argument('module'), 'guard_name' => 'api', 'created_at' => now()],
+                ['name' => 'force-delete '.$this->getModelName().'_'.$this->argument('module'), 'guard_name' => 'api', 'created_at' => now()],
+            ]);
+        }
+        if (!Schema::hasTable('module_has_permissions')) $this->info('Stoped adding permissions for modules, table module_has_permissions not found.');
+        else{
+            DB::table('module_has_permissions')->insert([
+                ['name' => 'view '.$this->getModelName().'_'.$this->argument('module'), 'module' => $this->argument('module'), 'created_at' => now()],
+                ['name' => 'viewAny '.$this->getModelName().'_'.$this->argument('module'), 'module' => $this->argument('module'), 'created_at' => now()],
+                ['name' => 'create '.$this->getModelName().'_'.$this->argument('module'), 'module' => $this->argument('module'), 'created_at' => now()],
+                ['name' => 'update '.$this->getModelName().'_'.$this->argument('module'), 'module' => $this->argument('module'), 'created_at' => now()],
+                ['name' => 'delete '.$this->getModelName().'_'.$this->argument('module'), 'module' => $this->argument('module'), 'created_at' => now()],
+                ['name' => 'restore '.$this->getModelName().'_'.$this->argument('module'), 'module' => $this->argument('module'), 'created_at' => now()],
+                ['name' => 'force-delete '.$this->getModelName().'_'.$this->argument('module'), 'module' => $this->argument('module'), 'created_at' => now()],
+            ]);
+        }
+        if (!Schema::hasTable('route_has_permissions')) $this->info('Stoped adding permissions for routes, table route_has_permissions not found.');
+        else{
+            DB::table('route_has_permissions')->insert([
+                ['permission' => 'view '.$this->getModelName().'_'.$this->argument('module'), 'method' => 'GET', 'route' => strtolower($this->argument('module'))."/".Str::plural(strtolower($this->getModelName())), 'created_at' => now()],
+                ['permission' => 'viewAny '.$this->getModelName().'_'.$this->argument('module'), 'method' => 'GET', 'route' => strtolower($this->argument('module'))."/".Str::plural(strtolower($this->getModelName())), 'created_at' => now()],
+                ['permission' => 'create '.$this->getModelName().'_'.$this->argument('module'), 'method' => 'POST', 'route' => strtolower($this->argument('module'))."/".Str::plural(strtolower($this->getModelName())), 'created_at' => now()],
+                ['permission' => 'update '.$this->getModelName().'_'.$this->argument('module'), 'method' => 'PUT', 'route' => strtolower($this->argument('module'))."/".Str::plural(strtolower($this->getModelName())), 'created_at' => now()],
+                ['permission' => 'delete '.$this->getModelName().'_'.$this->argument('module'), 'method' => 'DELETE', 'route' => strtolower($this->argument('module'))."/".Str::plural(strtolower($this->getModelName())), 'created_at' => now()],
+                ['permission' => 'restore '.$this->getModelName().'_'.$this->argument('module'), 'method' => 'POST', 'route' => strtolower($this->argument('module'))."/restore-".Str::plural(strtolower($this->getModelName())), 'created_at' => now()],
+                ['permission' => 'force-delete '.$this->getModelName().'_'.$this->argument('module'), 'method' => 'POST', 'route' => strtolower($this->argument('module'))."/-force-delete-".Str::plural(strtolower($this->getModelName())), 'created_at' => now()],
+            ]);
+        }
+    }
+
+    private function createSubModule(){
+        $module_info = $this->getFileContent(true);
+        $sub_module['route'] = $this->createRouteName();
+        $sub_module['main_module_id'] = $module_info['id'];
+        $sub_module['icon'] = $module_info['icon'];
+        $sub_module['slug'] = strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $this->getModelName()));
+        $sub_module['menu_order'] = $module_info['menu_order'];
+        $sub_module['title'] = $module_info['sub_module'];
+        $sub_module['created_by'] = 1;
+        SubModule::create($sub_module);
+    }
+
+    public function addMigrationFile($migration_name){
+        $this->created_files[] = base_path('Modules/'.$this->argument('module').'/Database/migrations/'.$migration_name.'.php');
+    }
 }

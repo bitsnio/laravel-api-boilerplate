@@ -32,18 +32,17 @@ class JwtAuthMiddleware
             $user = Auth::userOrFail();
             // if( Auth::user() === null) return JsonResponse::errorResponse('User is Logged In', 401);
         } catch (JWTException $e) {
-
             if ($e instanceof TokenInvalidException) {
                 return JsonResponse::errorResponse('Token is Invalid', 401);
             } else if ($e instanceof TokenExpiredException) {
                 return JsonResponse::errorResponse('Token is Expired', 401);
             } else if ($e instanceof UserNotDefinedException) {
                 return JsonResponse::errorResponse('User Does not Exists', 401);
-            }  
+            }
             else {
                 return JsonResponse::errorResponse('Authorization Token is Invalid', 401);
             }
-        } 
+        }
         return $next($request);
     }
 

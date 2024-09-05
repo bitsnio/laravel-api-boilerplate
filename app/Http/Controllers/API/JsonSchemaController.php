@@ -17,11 +17,17 @@ class JsonSchemaController extends Controller
                 'module' => 'string|required',
                 'sub_module' => 'string|required',
                 'schema' => 'array|required',
+                'schema.main_module' => 'required|array',
+                'schema.main_module.id' => 'required|integer',
+                'schema.main_module.icon' => 'required|string',
+                'schema.main_module.menu_order' => 'required|integer|gt:0'
             ]);
-            
-            $fileName = $data['sub_module'].'.json';
+
+            $fileName = str_replace(' ', '', $data['sub_module']).'.json';
             $path = 'Schema/' .$data['module'].'/';
             $module = 'Modules/' .$data['module'].'/';
+
+            $data['schema']['main_module']['sub_module'] = $data['sub_module'];
 
             //Validations for module and sub-modules
             if($validator->fails()) return response()->json(['error' => implode(' ', $validator->messages()->all())]);

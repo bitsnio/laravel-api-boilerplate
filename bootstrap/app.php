@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\ReadJsonCommand;
+use App\Http\Middleware\CustomPermissionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,7 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->group('api', [
-            JwtAuthMiddleware::class
+            JwtAuthMiddleware::class,
+            CustomPermissionMiddleware::class,
         ]);
         //
     })

@@ -2,6 +2,10 @@
 
 namespace Bitsnio\JsonToLaravelMigrations;
 
+use Bitsnio\Modules\Commands\MakeAllfilesCommand;
+use Illuminate\Support\Str;
+
+
 class MigrationCreator {
     /**
      * Migration methods
@@ -10,7 +14,7 @@ class MigrationCreator {
 
     /**
      * Create an instance of the Migration Creator
-     * 
+     *
      * @param array $methods
      * @return void
      */
@@ -21,29 +25,31 @@ class MigrationCreator {
     public function create($destinationPath) {
         foreach($this->methods as $table => $methods) {
             $this->createMigration($table, $methods, $destinationPath);
-            
+
             // So migrations get created in order
             sleep(1);
         }
     }
 
     private function createMigration($table, $methods, $destinationPath) {
+        $add_file = new MakeAllfilesCommand();
         $filename = $this->generateFileName($table);
+        $add_file->addMigrationFile($filename);
         $name     = $this->generateName($table);
-        $stub     = $this->createStub($name, $table, $methods);
+        $stub     = $this->createStub($name,Str::plural(strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $table))), $methods);
         $path     = $this->getPath($filename, $destinationPath);
-        
+
         file_put_contents($path, $stub);
     }
 
     private function generateName($table) {
-        return \Str::studly(
-            sprintf("create_%s_table", strtolower($table))
+        return Str::studly(
+            sprintf("create_%s_table", $table)
         );
     }
 
     private function generateFileName($table) {
-        return sprintf('%s_create_%s_table.php', date('Y_m_d_His'), strtolower($table));
+        return sprintf('%s_create_%s_table.php', date('Y_m_d_His'), Str::plural(strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $table))));
     }
 
     private function createStub($className, $tableName, $methods) {

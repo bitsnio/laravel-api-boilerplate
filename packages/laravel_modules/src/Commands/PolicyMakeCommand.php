@@ -19,6 +19,8 @@ class PolicyMakeCommand extends GeneratorCommand
      */
     protected $argumentName = 'name';
 
+    protected $model = 'model';
+
     /**
      * The console command name.
      *
@@ -49,6 +51,7 @@ class PolicyMakeCommand extends GeneratorCommand
     {
         return [
             ['name', InputArgument::REQUIRED, 'The name of the policy class.'],
+            ['model', InputArgument::REQUIRED, 'The name of the model class.'],
             ['module', InputArgument::OPTIONAL, 'The name of module will be used.'],
         ];
     }
@@ -63,6 +66,8 @@ class PolicyMakeCommand extends GeneratorCommand
         return (new Stub('/policy.plain.stub', [
             'NAMESPACE' => $this->getClassNamespace($module),
             'CLASS'     => $this->getClass(),
+            'MODEL'     => $this->argument('model'),
+            'OBJECT'    => '$'.strtolower($this->argument('model')),
         ]))->render();
     }
 
