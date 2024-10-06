@@ -8,6 +8,10 @@ use Bitsnio\JsonToLaravelMigrations\JsonToMigration;
 class MakeMigrations extends Command {
     protected $signature = 'json:migrate {file} {path}';
 
+    protected $argumentFile = 'file';
+
+    protected $argumentPath = 'path';
+
     protected $description = "Create migrations from JSON file.";
 
     public function handle() {

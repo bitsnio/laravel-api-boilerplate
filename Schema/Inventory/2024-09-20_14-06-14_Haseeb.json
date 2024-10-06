@@ -1,0 +1,81 @@
+{
+    "type": "object",
+    "main_module": {
+        "id": 3,
+        "icon": "ng-person",
+        "menu_order": 4,
+        "sub_module": "Haseeb"
+    },
+    "properties": {
+        "company_name": {
+            "type": "string"
+        },
+        "company_email": {
+            "type": "string"
+        },
+        "company_phone": {
+            "type": "string"
+        },
+        "address": {
+            "type": "object",
+            "properties": {
+                "street_1": {
+                    "type": "string"
+                },
+                "street_2": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "AL",
+                        "OR",
+                        "PW",
+                        "PA",
+                        "PR",
+                        "RI",
+                        "SC"
+                    ]
+                },
+                "zip_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "birthday": {
+            "type": "string"
+        },
+        "notes": {
+            "type": "string"
+        },
+        "phone_numbers": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "cell",
+                            "home",
+                            "work"
+                        ]
+                    },
+                    "number": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type",
+                    "number"
+                ]
+            }
+        }
+    },
+    "required": [
+        "last_name"
+    ]
+}

@@ -10,18 +10,14 @@ use Bitsnio\Modules\Support\Stub;
 use Bitsnio\Modules\Traits\ModuleCommandTrait;
 use Exception;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Modules\HMS\App\Models\SubModule;
-use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Throwable;
 
 class MakeAllfilesCommand extends GeneratorCommand
 {
-    use ModuleCommandTrait;
-
     /**
      * The name of argument name.
      *
@@ -142,9 +138,12 @@ class MakeAllfilesCommand extends GeneratorCommand
 
 
             //create migration file
-            $path = $this->laravel['modules']->getModulePath($this->getModuleName());
-            $generatorPath = GenerateConfigReader::read('migration');
-            $this->call('json:migrate', ['file' => 'Schema/'.$this->getModuleName().'/'.$this->getModelName().'.json', 'path' => $path . $generatorPath->getPath() . '/']);
+            $path = $this->getModulePath();
+            $generatorPath = GenerateConfigReader::read('migration')->getPath();
+            $this->call('json:migrate', [
+                'file' => 'Schema/'.$this->getModuleName().'/'.$this->getModelName().'.json',
+                'path' => $path . $generatorPath . '/'
+            ]);
 
             $this->generatePermissions();
 
@@ -162,7 +161,7 @@ class MakeAllfilesCommand extends GeneratorCommand
                 }
             }
 
-            throw new Exception('Failed to create resorce, actions reversed, try again, error :'.$th->getMessage());
+            throw new Exception($this->laravel['modules']->getModulePath().''.'  Failed to create resorce, actions reversed, try again, error :'.$th->getMessage());
         }
 
     }
@@ -191,7 +190,7 @@ class MakeAllfilesCommand extends GeneratorCommand
      */
     protected function getDestinationFilePath()
     {
-        $path = $this->laravel['modules']->getModulePath($this->getModuleName());
+        $path = $this->getModulePath();
 
         $modelPath = GenerateConfigReader::read('model');
 
@@ -302,5 +301,13 @@ class MakeAllfilesCommand extends GeneratorCommand
 
     public function addMigrationFile($migration_name){
         $this->created_files[] = base_path('Modules/'.$this->argument('module').'/Database/migrations/'.$migration_name.'.php');
+    }
+
+    public function getModuleName(){
+        return $this->argument('module');
+    }
+
+    public function getModulePath(){
+        return base_path('Modules/'.$this->argument('module'));
     }
 }

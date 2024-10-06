@@ -5,14 +5,14 @@ namespace Bitsnio\JsonToLaravelMigrations;
 class SchemaParser {
     /**
      * Migration schema as an array
-     * 
+     *
      * @var array
      */
     protected $schema;
 
     /**
      * Create a new Schema parser instance
-     * 
+     *
      * @param array $schema
      */
     public function __construct(Array $schema) {
@@ -21,22 +21,22 @@ class SchemaParser {
 
     /**
      * Parses the schema into migration methods
-     * 
+     *
      * @return array
      */
     public function parse() {
         $tables = Helpers::justKeys($this->schema);
-        
+
         foreach($this->schema as $table => $columns) {
             $tables[$table] = $this->generateMethods($columns);
         }
-        
+
         return $tables;
     }
 
     /**
      * Loops through array of columns to parse
-     * 
+     *
      * @return array
      */
     private function generateMethods(Array $columns) {
@@ -45,10 +45,10 @@ class SchemaParser {
         foreach($columns as $column => $parameters) {
             $methods[] = $this->generateMethod($column, $parameters);
         }
-        
+
         return $methods;
     }
-    
+
     /**
      * Generates a migration method for the column
      */
@@ -58,16 +58,16 @@ class SchemaParser {
         $columnTypeParameters = array_slice(head($parameters), 1);
 
         $this->checkIfValidColumnType($columnType);
-        
+
         $baseMethod = $this->generateBaseMethod($column, $columnType, $columnTypeParameters);
         $modifiers  = $this->generateModifiers($modifiers);
-        
+
         return $baseMethod . $modifiers . ';';
     }
 
     /**
      * Generate the base method for the migration
-     * 
+     *
      * @param string $column
      * @param string $columnType
      * @param array $columnTypeParameters
@@ -76,7 +76,7 @@ class SchemaParser {
     private function generateBaseMethod($column, $columnType, $columnTypeParameters) {
         $validColumnType      = Parameters::getValidColumnType($columnType);
         $methodParameters     = Parameters::getParameters($validColumnType);
-        $columnTypeParameters = !empty($columnTypeParameters) ? 
+        $columnTypeParameters = !empty($columnTypeParameters) ?
             explode(',', $columnTypeParameters[0]) :
             [];
 
@@ -102,7 +102,7 @@ class SchemaParser {
 
     /**
      * Generate the additional modifiers
-     * 
+     *
      * @param array $modifiers
      * @return string
      */
@@ -117,7 +117,7 @@ class SchemaParser {
             foreach($params as $k => $param) {
                 if(
                     is_string($param) &&
-                    ($param == '' || $param == 'bool') && 
+                    ($param == '' || $param == 'bool') &&
                     !isset($modifierParams[$k])
                 ) {
                     throw new \Exception("Modifier {$modifierName} needs a default value.");
@@ -130,7 +130,7 @@ class SchemaParser {
                         $extraParameters[] = $modifierParams[$k];
                     }
                 }
-                
+
                 if(is_string($param)) {
                     if($param == '') {
                         $extraParameters[] = "'{$modifierParams[$k]}'";
@@ -142,7 +142,7 @@ class SchemaParser {
                         }
                     } else {
                         $extraParameters[] = isset($modifierParams[$k]) ? "'{$modifierParams[$k]}'" : "'$param'";
-                    } 
+                    }
                 }
             }
 
@@ -165,13 +165,11 @@ class SchemaParser {
 
     /**
      * Joins parameters into a proper string
-     * 
+     *
      * @param array $parameters
      * @return string
      */
     private function joinParameters($parameters) {
-        return !empty($parameters) ? 
-            implode(', ', $parameters) :
-            '';
+        return !empty($parameters) ? implode(', ', $parameters) : '';
     }
 }

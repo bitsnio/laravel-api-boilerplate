@@ -17,3 +17,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum'])->prefix('v1')->name('api.')->group(function () {
     Route::get('inventory', fn (Request $request) => $request->user())->name('inventory');
 });
+
+use Modules\Inventory\App\Http\Controllers\IrfanMalikController;
+Route::apiResource('inventory/irfan-maliks', IrfanMalikController::class);
+use Modules\Inventory\App\Http\Controllers\HaseebController;
+Route::apiResource('inventory/haseebs', HaseebController::class);
