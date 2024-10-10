@@ -32,9 +32,7 @@ class MigrationCreator {
     }
 
     private function createMigration($table, $methods, $destinationPath) {
-        $add_file = new MakeAllfilesCommand();
         $filename = $this->generateFileName($table);
-        $add_file->addMigrationFile($filename);
         $name     = $this->generateName($table);
         $stub     = $this->createStub($name,Str::plural(strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $table))), $methods);
         $path     = $this->getPath($filename, $destinationPath);

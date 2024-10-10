@@ -141,11 +141,23 @@ class MakeAllfilesCommand extends GeneratorCommand
             $this->created_files[] = $base_path.'App/HTTP/Controllers/'.$controllerName.'.php';
 
 
-            //create migration file
+            /**
+             * First read all migrations in migration directory
+             * store all files in array to keep record of migrations
+             * create new migrations from JSON Schema
+             * then call function currentMigarionFles it store new created files in created_files array
+            */
+            $migrationsPath = base_path('Modules/'.$this->argument('module').'/Database/migrations/');
+            $initialFiles = File::files($migrationsPath);
+            $initialFileNames = collect($initialFiles)->map(function ($file) {
+                return $file->getFilename();
+            })->toArray();
+
             $path = $this->laravel['modules']->getModulePath($this->getModuleName());
             $generatorPath = GenerateConfigReader::read('migration');
             $this->call('json:migrate', ['file' => 'Schema/'.$this->getModuleName().'/'.$this->getModelName().'.json', 'path' => $path . $generatorPath->getPath() . '/']);
-
+            $this->currentMigrationFiles($initialFileNames, $migrationsPath);
+            
             $this->generatePermissions();
 
             $this->createSubModule();
@@ -299,8 +311,17 @@ class MakeAllfilesCommand extends GeneratorCommand
         $sub_module['created_by'] = 1;
         SubModule::create($sub_module);
     }
+    function currentMigrationFiles($initialFileNames, $migrationsPath){
+        $currentFiles = File::files($migrationsPath);
+        $currentFileNames = collect($currentFiles)->map(function ($file) {
+            return $file->getFilename();
+        })->toArray();
 
-    public function addMigrationFile($migration_name){
-        $this->created_files[] = base_path('Modules/'.$this->argument('module').'/Database/migrations/'.$migration_name.'.php');
+        // Step 3: Find new files created during execution
+        $newFiles = array_diff($currentFileNames, $initialFileNames);
+        foreach($newFiles as $file){
+            $this->created_files[] = $migrationsPath.$file;
+        }
+
     }
 }
