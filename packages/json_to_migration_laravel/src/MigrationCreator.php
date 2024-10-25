@@ -25,7 +25,6 @@ class MigrationCreator {
     public function create($destinationPath) {
         foreach($this->methods as $table => $methods) {
             $this->createMigration($table, $methods, $destinationPath);
-
             // So migrations get created in order
             sleep(1);
         }

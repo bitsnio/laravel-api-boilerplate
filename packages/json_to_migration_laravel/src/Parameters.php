@@ -67,6 +67,9 @@ abstract class Parameters {
         'uuidMorphs'            => [],
         'uuid'                  => [],
         'year'                  => [],
+
+        'rename'                  => [],
+        'change'                  => [],
     ];
     
     /**

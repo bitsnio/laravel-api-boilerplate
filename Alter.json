@@ -1,0 +1,49 @@
+{
+    "type": "object",
+    "alter": true,
+    "table": "table_x",
+    "properties": {
+        "rename": {
+            "column_x": "new_column",
+            "column_y": "new_column",
+            "column_z": "new_column"
+        },
+        "delete": [
+            "column_x",
+            "column_y",
+            "column_z"
+        ],
+        "update": {
+            "type": {
+                "column_1": "string",
+                "column_2": "int"
+            },
+            "size": {
+                "column_1": 255
+            },
+            "default": {
+                "column_1": 0,
+                "column_2": null,
+                "column_3": "Not Null"
+            }
+        },
+        "add": {
+            "columns":{
+                "new_column_x": {
+                    "type": "string"
+                },
+                "new_column_y": {
+                    "type": "int",
+                    "default": 0
+                },
+                "new_column_z": {
+                    "type": "int"
+                }
+            },
+            "required": [
+                "new_column_x",
+                "new_column_z"
+            ]
+        }
+    }
+}

@@ -18,7 +18,10 @@ Create a `Template.json` file in the root of your project, and use a template li
 ```json
 {
     "posts": {
-        "name"   : "string:50|index:50",
+        "name|rename"   : "string:50|index:50",
+        "name"   : "rename:name,old_name",
+
+        "name"   : "string:50|index:50",        
         "state"  : "enum:active,inactive|default:active",
         "text"   : "text",
         "slug"   : "string:50|unique",

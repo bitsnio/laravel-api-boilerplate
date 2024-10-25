@@ -2,6 +2,9 @@
 
 namespace Bitsnio\JsonToLaravelMigrations;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
 class SchemaParser {
     /**
      * Migration schema as an array
@@ -9,6 +12,7 @@ class SchemaParser {
      * @var array
      */
     protected $schema;
+    protected $alter;
 
     /**
      * Create a new Schema parser instance
@@ -16,7 +20,8 @@ class SchemaParser {
      * @param array $schema
      */
     public function __construct(Array $schema) {
-        $this->schema = $schema;
+        $this->schema = $schema['data'];
+        $this->alter = $schema['alter'];
     }
 
     /**
@@ -48,6 +53,7 @@ class SchemaParser {
         
         return $methods;
     }
+
     
     /**
      * Generates a migration method for the column
