@@ -12,7 +12,7 @@ class SchemaParser {
      * @var array
      */
     protected $schema;
-    protected $alter;
+    // protected $alter;
 
     /**
      * Create a new Schema parser instance
@@ -20,8 +20,9 @@ class SchemaParser {
      * @param array $schema
      */
     public function __construct(Array $schema) {
-        $this->schema = $schema['data'];
-        $this->alter = $schema['alter'];
+        $this->schema = $schema;
+        // $this->schema = $schema['data'];
+        // $this->alter = $schema['alter'];
     }
 
     /**

@@ -1,0 +1,21 @@
+{
+    "delete": [
+        "company_name",
+        "company_email"
+    ],
+    "update": {
+        "city": {
+            "title": "company_city",
+            "type": "string",
+            "length": 255
+        }
+    },
+    "add": {
+        "company_status": {
+            "title": "company_title",
+            "type": "string",
+            "default": "active",
+            "length": 255
+        }
+    }
+}
