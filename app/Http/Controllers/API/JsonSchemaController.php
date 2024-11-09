@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Traits\AlterSchema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 
 
