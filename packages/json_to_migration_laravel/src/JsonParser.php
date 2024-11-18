@@ -33,7 +33,7 @@ class JsonParser {
         $json = $this->get();
         $schema = [];
 
-        foreach($json['data'] as $table => $columns) {
+        foreach($json as $table => $columns) {
             $schema[$table] = [];
 
             foreach($columns as $column => $parameters) {
