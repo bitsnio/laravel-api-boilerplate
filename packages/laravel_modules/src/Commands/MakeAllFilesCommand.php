@@ -250,10 +250,10 @@ class MakeAllfilesCommand extends GeneratorCommand
     }
 
     private function generateRoute($controllerName){
-        $name_space = "\nuse Modules\\".$this->argument('module')."\App\Http\Controllers\\".$controllerName.";";
-        $dynamic_route = "\nRoute::apiResource('".$this->createRouteName()."', ".$controllerName."::class);";
+        $name_space = "\nModules\\".$this->argument('module')."\App\Http\Controllers\\".$controllerName;
+        $dynamic_route = "\nRoute::apiResource('".$this->createRouteName()."', ".$name_space."::class);";
         $route_file_path = base_path("Modules/".$this->argument('module')."/routes/api.php");
-        File::append($route_file_path, $name_space);
+        // File::append($route_file_path, $name_space);
         File::append($route_file_path, $dynamic_route);
     }
 
