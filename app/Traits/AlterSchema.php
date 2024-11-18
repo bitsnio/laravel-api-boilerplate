@@ -48,6 +48,7 @@ trait AlterSchema{
         foreach($this->files as $file){
             $this->loadFile($file);
             $this->alter($file);
+            dd($file);
             $this->updateFile($file);
             $this->reset();
         }
@@ -57,13 +58,31 @@ trait AlterSchema{
 
     public function alter($file){
         try{
-            $table = pathinfo($file, PATHINFO_FILENAME);
-            $table = 'companies';
-            $this->current_table = $table;
-            $this->captureSchemaState($table);
-            $this->validate($table);
-            // dd(3334);
-            Schema::table($table, function (Blueprint $table) {
+            $table1 = pathinfo($file, PATHINFO_FILENAME);
+            $table1 = 'companies';
+            $this->current_table = $table1;
+            // $this->captureSchemaState($table);
+            $this->validate($table1); 
+            Schema::table($table1, function (Blueprint $table) {
+                //Update columns
+                // if(!empty($this->columns_to_update)){
+                //     foreach($this->columns_to_update as $index => $update){
+                //         if(isset($update['type'])){
+                //             $table->{$update['type']}($index)->change();
+                //         }
+                //         if(isset($update['length'])){
+                //             $table->{$update['type']}($index, trim($update['length'], '"\'', ))->change();
+                //         }
+                //         if(isset($update['default'])){
+                //             $table->{$update['type']}($index)->default($update['default'])->change();
+                //         }
+                //         if(isset($update['title'])){
+                //             $table->renameColumn($update['title'], $index);
+                //         }
+                //         // dd($index , $update);
+                //     }
+                // }
+
                 // Add new columns
                 if(!empty($this->new_columns)){
                     foreach($this->new_columns as $new_column){
@@ -78,38 +97,22 @@ trait AlterSchema{
                             $table->{$new_column['type']}($new_column['title'])->default($new_column['default'])->after('id');
                         }
                         else{
-                            $table->{$new_column['type']}($new_column['title'])->befor('id');
+                            $table->{$new_column['type']}($new_column['title'])->after('id');
                         }
-                        $table->integer('new_column')->default(0)->after('id');
+                        // $table->integer('new_column')->default(0)->after('id');
                     }
                 }
+
                 // Delete columns
                 if(!empty($this->columns_to_delete)){
                     foreach($this->columns_to_delete as $delete){
                         $table->dropColumn($delete);
                     }
                 }
-                //Update columns
-                if(!empty($this->columns_to_update)){
-                    foreach($this->columns_to_update as $index => $update){
-                        if(isset($update['type'])){
-                            $table->{$update['type']}($index)->change();
-                        }
-                        if(isset($update['length'])){
-                            $table->{$update['type']}($index, trim($update['length'], '"\'', ))->change();
-                        }
-                        if(isset($update['default'])){
-                            $table->{$update['type']}($index)->default($update['default'])->change();
-                        }
-                        if(isset($update['rename'])){
-                            $table->renameColumn($index, $update['title']);
-                        }
-                    }
-                }
             });
         }
         catch(Throwable $th){
-            $this->reverseSchemaChange();
+            // $this->reverseSchemaChange();
             throw new Exception($th->getMessage());
         }
     }
@@ -125,7 +128,7 @@ trait AlterSchema{
 
             if(isset($file_content['add'])) $this->new_columns = $file_content['add'];
 
-            if(isset($file_content['update'])) $this->new_columns = $file_content['update'];
+            if(isset($file_content['update'])) $this->columns_to_update = $file_content['update'];
         }
     }
 
@@ -135,7 +138,7 @@ trait AlterSchema{
         $this->columns_to_delete = [];
         $this->columns_to_update = [];
         $this->originalSchema = [];
-    }
+    } 
 
     private function updateFile($file){
         $timestamp = date('Y-m-d_H-i-s');
@@ -149,7 +152,6 @@ trait AlterSchema{
         if (!Schema::hasTable($tableName)) {
             throw new Exception("Table '{$tableName}' does not exist.");
         }
-
         $this->originalSchema[$tableName] = $this->getColumnDetails($tableName);
     }
 
@@ -165,7 +167,6 @@ trait AlterSchema{
                 'default' => $column->Default,
             ];
         }
-
         return $columnDetails;
     }
 
@@ -210,22 +211,32 @@ trait AlterSchema{
 
     private function validate($table){
         foreach($this->new_columns as $new_column){
-            $this->validateColumnType($table, $new_column['title'], $new_column['type'], null, true);
+            dd($new_column);
+            $this->validateColumnType($table, $new_column['title'], $new_column['type'], null, false);
+        }
+        foreach($this->columns_to_update as $update){
+            $this->validateColumnType($table, $update['title'], $update['type'], null, true);
+        }
+        // dd($this->columns_to_delete);
+        foreach($this->columns_to_delete as $delete){
+            if($this->isForeignKey($this->current_table, $delete)) {
+                throw new Exception("Cannot delete column '{$delete}' as it is part of foreign or unique key.");
+            }        
         }
     }
 
-    function validateColumnType($tableName, $columnName, $columnType, $is_new_column,  $enumOptions = null)
+    function validateColumnType($tableName, $columnName, $columnType, $value, $key)
     {
         if (!Schema::hasTable($tableName)) {
             throw new Exception("Table '{$tableName}' does not exist.");
         }
         
         if (Schema::hasColumn($tableName, $columnName)) {
-            if($is_new_column){
-                $this->reverseSchemaChange();
+            if($key == 'rename' || $key == 'new'){
+                // $this->reverseSchemaChange();
                 throw new Exception("Column '{$columnName}' already exist in table '{$tableName}'.");
             }
-            elseif($this->isForeignKey($tableName, $columnName)) {
+            if($this->isForeignKey($tableName, $columnName)) {
                 throw new Exception("Cannot rename/delete column '{$columnName}' as it is a foreign key.");
             }
         }
@@ -244,7 +255,7 @@ trait AlterSchema{
             'timestamp' => 'date',
             'float' => 'numeric',
             'decimal' => 'numeric',
-        ];
+        ]; 
     
         // Check if column type is valid or handle `enum` type specifically
         if ($columnType === 'enum') {
@@ -253,13 +264,13 @@ trait AlterSchema{
             }
             
             // Define validation rule for enum as 'in' with the list of allowed values
-            $rules = ['value' => 'in:' . implode(',', $enumOptions)];
+            $rules = ['value' => 'in:' . implode(',', $value)];
         } elseif (array_key_exists($columnType, $validTypes)) {
             // Use standard validation rule for recognized types
             $rules = ['value' => $validTypes[$columnType]];
         } else {
             // Unsupported type
-            $this->reverseSchemaChange();
+            // $this->reverseSchemaChange();
             throw new Exception("Unsupported column type '{$columnType}' for column '{$columnName}'.");
         }
     
@@ -284,6 +295,18 @@ trait AlterSchema{
             AND REFERENCED_TABLE_NAME IS NOT NULL
         ", [$tableName, $columnName]);
 
-        return !empty($foreignKeys);
+        $uniqueIndexes = DB::select("
+            SELECT INDEX_NAME 
+            FROM INFORMATION_SCHEMA.STATISTICS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = ? 
+            AND COLUMN_NAME = ? 
+            AND NON_UNIQUE = 0
+        ", [$tableName, $columnName]);
+
+        $isPartOfUniqueIndex = !empty($uniqueIndexes);
+        $isPartOfForeignKey = !empty($foreignKeys);
+
+        return ($isPartOfForeignKey || $isPartOfUniqueIndex) ? true : false;
     }
 }

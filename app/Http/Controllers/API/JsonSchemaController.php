@@ -39,11 +39,6 @@ class JsonSchemaController extends Controller
             if (!is_dir(base_path($module))) return response()->json(['error' => 'Module not found']);
             if (file_exists(base_path($path . $fileName))) return response()->json(['error' => 'Schema or sub module already exists']);
             if (!file_exists(base_path($path))) mkdir(base_path($path), 0777, true);
-            $response = $this->alterSchema();
-            if($response) response()->json('successfully altered');
-            dd(4432);
-            dd('TERMINATED');
-
             file_put_contents(base_path($path . $fileName), json_encode($data['schema'], JSON_PRETTY_PRINT));
             return response()->json('Json schema created successfully');
         } catch (\Throwable $th) {

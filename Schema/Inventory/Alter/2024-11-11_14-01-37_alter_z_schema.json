@@ -1,7 +1,6 @@
 {
     "delete": [
-        "new_column",
-        "company_title"
+        "country"
     ],
     "update": {
         "city": {
@@ -12,8 +11,8 @@
         }
     },
     "add": {
-        "company_titleee": {
-            "title": "company_titleee",
+        "company_title": {
+            "title": "company_title",
             "type": "string",
             "default": "active",
             "length": 255
