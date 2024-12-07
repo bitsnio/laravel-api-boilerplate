@@ -5,6 +5,7 @@ namespace Modules\HMS\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Modules\HMS\App\Models\Countries;
 
 class HMSDatabaseSeeder extends Seeder
 {
@@ -13,7 +14,7 @@ class HMSDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        Countries::factory()->count(100)->create();
 
         DB::table('users')->insert([
             'user_type' => 'sa',

@@ -10,8 +10,10 @@ use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\UserNotDefinedException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\InvalidClaimException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\JsonResponse;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth as FacadesJWTAuth;
 
 class JwtAuthMiddleware
 {
@@ -29,10 +31,12 @@ class JwtAuthMiddleware
             if (in_array(basename($request->path()), $this->pathToExcludeFromMiddleware())) {
                 return $next($request);
             }
-            $user = Auth::userOrFail();
-            // if( Auth::user() === null) return JsonResponse::errorResponse('User is Logged In', 401);
+            
+            if(JWTAuth::parseToken()->authenticate()){
+                return $next($request);
+            }
         } catch (JWTException $e) {
-
+           
             if ($e instanceof TokenInvalidException) {
                 return JsonResponse::errorResponse('Token is Invalid', 401);
             } else if ($e instanceof TokenExpiredException) {
@@ -44,7 +48,7 @@ class JwtAuthMiddleware
                 return JsonResponse::errorResponse('Authorization Token is Invalid', 401);
             }
         } 
-        return $next($request);
+        
     }
 
     public function pathToExcludeFromMiddleware(): array
