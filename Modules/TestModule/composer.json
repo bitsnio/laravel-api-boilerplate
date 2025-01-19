@@ -1,0 +1,30 @@
+{
+    "name": "bitsnio/testmodule",
+    "description": "",
+    "authors": [
+        {
+            "name": "Shehryar Azeem",
+            "email": "shehryar.azeemt@bitsnio.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\TestModule\\": "app/",
+            "Modules\\TestModule\\Database\\Factories\\": "database/factories/",
+            "Modules\\TestModule\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\TestModule\\Tests\\": "tests/"
+        }
+    }
+}
