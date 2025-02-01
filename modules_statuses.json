@@ -1,4 +1,5 @@
 {
     "HMS": true,
-    "Inventory": true
+    "Inventory": true,
+    "TestModule": true
 }

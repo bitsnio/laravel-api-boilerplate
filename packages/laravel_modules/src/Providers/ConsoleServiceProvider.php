@@ -76,6 +76,7 @@ class ConsoleServiceProvider extends ServiceProvider
             Commands\UpdateCommand::class,
             Commands\UseCommand::class,
             Commands\MakeAllfilesCommand::class,
+            Commands\MakeMenuCommand::class,
         ]);
     }
 }

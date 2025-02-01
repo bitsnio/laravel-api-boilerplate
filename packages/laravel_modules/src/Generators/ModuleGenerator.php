@@ -326,8 +326,8 @@ class ModuleGenerator extends Generator
         $this->component->info("Creating module: [$name]");
 
         $this->generateFolders();
-
         $this->generateModuleJsonFile();
+        $this->generateMenuConfig();
 
         if ($this->type !== 'plain') {
             $this->generateFiles();
@@ -598,5 +598,11 @@ class ModuleGenerator extends Generator
     protected function getProviderNamespaceReplacement(): string
     {
         return str_replace('\\', '\\\\', GenerateConfigReader::read('provider')->getNamespace());
+    }
+
+    protected function generateMenuConfig(): void
+    {
+        $menuGenerator = new MenuGenerator($this->module, $this->getName());
+        $menuGenerator->generate();
     }
 }
