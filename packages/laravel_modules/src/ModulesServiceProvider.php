@@ -2,6 +2,7 @@
 
 namespace Bitsnio\Modules;
 
+use Bitsnio\Modules\Providers\MenuServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Bitsnio\Modules\Providers\BootstrapServiceProvider;
 use Bitsnio\Modules\Providers\ConsoleServiceProvider;
@@ -64,7 +65,7 @@ abstract class ModulesServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return [Contracts\RepositoryInterface::class, 'modules'];
+        return [Contracts\RepositoryInterface::class, 'modules','modules.menu'];
     }
 
     /**
@@ -74,5 +75,6 @@ abstract class ModulesServiceProvider extends ServiceProvider
     {
         $this->app->register(ConsoleServiceProvider::class);
         $this->app->register(ContractsServiceProvider::class);
+        $this->app->register(MenuServiceProvider::class);
     }
 }

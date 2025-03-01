@@ -8,23 +8,19 @@ return [
         'routes_type' => '',
         'sub_module' => [
             [
-                'name' => 'TestModule',
+                'name' => 'AddItems',
                 'routes_type' => 'full',
                 'icon' => 'fas fa-list',
-                'middleware' => [
-                    'web',
-                    'auth',
-                ],
+                'middleware' => ['web', 'auth'],
                 'order' => 1,
                 'actions' => [
-                    'name' => 'TestModule',
-                    'routes_type' => 'single',
-                    'icon' => 'fas fa-list',
-                    'middleware' => [
-                        'web',
-                        'auth',
-                    ],
-                    'order' => 1,
+                    [
+                        'name' => 'UpdateItems',
+                        'routes_type' => 'single',
+                        'icon' => 'fas fa-list',
+                        'middleware' => ['web', 'auth'],
+                        'order' => 1,
+                    ]
                 ],
             ],
             [
@@ -32,13 +28,17 @@ return [
                 'title' => 'Add Categories',
                 'routes_type' => 'full',
                 'icon' => 'fas Fa-home',
-                'middleware' => [
-                    'api',
-                    'auth',
-                    'permission',
-                ],
+                'middleware' => ['api', 'auth', 'permission'],
                 'order' => 3,
                 'actions' => [
+                    [
+                        'name' => 'Review',
+                        'title' => 'Review',
+                        'routes_type' => 'full',
+                        'icon' => 'fas fa-list',
+                        'middleware' => ['api', 'auth'],
+                        'order' => 2,
+                    ],
                 ],
             ],
             [
@@ -46,10 +46,7 @@ return [
                 'title' => 'Returns',
                 'routes_type' => 'full',
                 'icon' => 'fa fa-return',
-                'middleware' => [
-                    'api',
-                    'auth',
-                ],
+                'middleware' => ['api', 'auth'],
                 'order' => 3,
                 'actions' => [
                     [
@@ -57,10 +54,7 @@ return [
                         'title' => 'Return From Customers',
                         'routes_type' => 'full',
                         'icon' => 'Fa fa-cus',
-                        'middleware' => [
-                            'api',
-                            'auth',
-                        ],
+                        'middleware' => ['api', 'auth'],
                         'order' => 1,
                     ],
                 ],

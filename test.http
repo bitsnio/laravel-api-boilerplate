@@ -26,6 +26,13 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vM
 
 
 ###
+
+###
+GET http://{{hostname}}/test-module HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3NDAzMzI0MzksImV4cCI6MTc0MDM2ODQzOSwibmJmIjoxNzQwMzMyNDM5LCJqdGkiOiJ2ZTd1TDBaM0RWYVhLdFlUIiwic3ViIjoiMSIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjciLCJ1c2VyX2lkIjoxLCJ1c2VyX25hbWUiOiJIYXNlZWIiLCJjb21wYW55X2lkIjoxfQ.BU8BgZ2VsQaIfM_y2zUtQdot9wjqcKtVtEkozLazv20
+
+###
 POST http://{{hostname}}/auth/register HTTP/1.1
 content-type: application/json
 
@@ -33,5 +40,6 @@ content-type: application/json
     "email": "haseeb@mail.com",
     "password": "12345678",
     "confirm_password": "12345678",
-    "name":"Haseeb"
+    "name":"Haseeb",
+    "company_id":1
 }

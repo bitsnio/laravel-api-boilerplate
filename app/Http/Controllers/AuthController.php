@@ -64,9 +64,9 @@ class AuthController extends Controller {
             $user = User::where( 'email', $request->email )->first();
             $customClaims = [ 'user_id' => $user->id, 'user_name' => $user->name, 'company_id' => $user->company_id ];
             $token = JWTAuth::claims( $customClaims )->attempt( $input );
-            // dd( $user );
-            $data = Helper::usersModules( $user->id );
-            return Helper::successResponse( $data, 'User Logged In Successfully', 200, $token );
+            //  dd( $user );
+            // $data = Helper::usersModules( $user->id );
+            return Helper::successResponse([], 'User Logged In Successfully', 200, $token );
 
         } catch ( JWTException $e ) {
             return Helper::errorResponse( $e->getMessage() );
@@ -77,13 +77,14 @@ class AuthController extends Controller {
 
     public function register( Request $request ) {
 
-        $input = $request->only( 'name', 'email', 'password', 'confirm_password' );
+        $input = $request->only( 'name', 'email', 'password', 'confirm_password' ,'company_id');
 
         $validator = Validator::make( $input, [
             'name' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
             'confirm_password' => 'required|same:password',
+            'company_id'=> 'required'
         ] );
 
         if ( $validator->fails() ) {

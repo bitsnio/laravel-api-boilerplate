@@ -296,7 +296,12 @@ class MakeMenuCommand extends Command
             }
 
             if (is_array($value)) {
-                $output .= $this->arrayToString($value, $indent);
+                // Special handling for middleware array to keep it in one line
+                if ($key === 'middleware') {
+                    $output .= "['" . implode("', '", $value) . "']";
+                } else {
+                    $output .= $this->arrayToString($value, $indent);
+                }
             } elseif (is_string($value)) {
                 $output .= "'$value'";
             } elseif (is_bool($value)) {
