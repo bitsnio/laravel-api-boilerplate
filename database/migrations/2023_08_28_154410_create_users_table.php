@@ -47,8 +47,8 @@ return new class extends Migration
             $table->string('email');
             $table->string('password');
             $table->integer('company_id');
-            $table->string('main_module_id');
-            $table->integer('role')->default(0);
+            // $table->string('main_module_id');
+            // $table->integer('role')->default(0);
             $table->integer('created_by')->default(0);
             $table->integer('updated_by')->default(0);
             
