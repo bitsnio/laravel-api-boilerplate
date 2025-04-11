@@ -3,21 +3,24 @@
 namespace Modules\TestModule\App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Bitsnio\Modules\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Js;
 
-class AddItemsController extends Controller
+class MasteritemController extends Controller
 {
     public array $data = [];
 
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index():JsonResponse
     {
-        //
-
-        return response()->json($this->data);
+        return response()->json([
+            'status' => 'success',
+            'data' => [] // Your data here
+        ]);
     }
 
     /**
@@ -36,7 +39,10 @@ class AddItemsController extends Controller
     public function show($id): JsonResponse
     {
         //
-
+        return response()->json([
+            'id' => $id,
+            'data' => $this->data,
+        ]);
         return response()->json($this->data);
     }
 

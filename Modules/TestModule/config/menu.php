@@ -1,64 +1,39 @@
 <?php
-
+// stubs/menu.stub
 return [
     'module' => [
         'name' => 'TestModule',
+        'title' => 'TestModule',
         'icon' => 'fas fa-cube',
         'order' => 1,
         'routes_type' => '',
         'sub_module' => [
             [
-                'name' => 'AddItems',
+                'name' => 'masteritem',
+                'title' => 'Master Item',
                 'routes_type' => 'full',
                 'icon' => 'fas fa-list',
-                'middleware' => ['web', 'auth'],
+                'middleware' => ['api', 'auth'],
                 'order' => 1,
                 'actions' => [
                     [
-                        'name' => 'UpdateItems',
+                        'name' => 'createitem',
+                        'title' => 'Create Item',
                         'routes_type' => 'single',
                         'icon' => 'fas fa-list',
-                        'middleware' => ['web', 'auth'],
-                        'order' => 1,
-                    ]
-                ],
-            ],
-            [
-                'name' => 'AddCategories',
-                'title' => 'Add Categories',
-                'routes_type' => 'full',
-                'icon' => 'fas Fa-home',
-                'middleware' => ['api', 'auth', 'permission'],
-                'order' => 3,
-                'actions' => [
+                        'middleware' => ['api', 'auth'],
+                        'order' => 1
+                    ],
                     [
-                        'name' => 'Review',
-                        'title' => 'Review',
-                        'routes_type' => 'full',
+                        'name' => 'createcategory',
+                        'title' => 'Create Category',
+                        'routes_type' => 'single',
                         'icon' => 'fas fa-list',
                         'middleware' => ['api', 'auth'],
-                        'order' => 2,
-                    ],
-                ],
-            ],
-            [
-                'name' => 'Returns',
-                'title' => 'Returns',
-                'routes_type' => 'full',
-                'icon' => 'fa fa-return',
-                'middleware' => ['api', 'auth'],
-                'order' => 3,
-                'actions' => [
-                    [
-                        'name' => 'ReturnFromCustomers',
-                        'title' => 'Return From Customers',
-                        'routes_type' => 'full',
-                        'icon' => 'Fa fa-cus',
-                        'middleware' => ['api', 'auth'],
-                        'order' => 1,
-                    ],
-                ],
-            ],
-        ],
-    ],
+                        'order' => 1
+                    ]
+                ]
+            ]
+        ]
+    ]
 ];

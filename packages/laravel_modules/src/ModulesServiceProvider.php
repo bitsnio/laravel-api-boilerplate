@@ -7,6 +7,8 @@ use Illuminate\Support\ServiceProvider;
 use Bitsnio\Modules\Providers\BootstrapServiceProvider;
 use Bitsnio\Modules\Providers\ConsoleServiceProvider;
 use Bitsnio\Modules\Providers\ContractsServiceProvider;
+use Bitsnio\Modules\Providers\PermissionServiceProvider;
+
 
 abstract class ModulesServiceProvider extends ServiceProvider
 {
@@ -76,5 +78,6 @@ abstract class ModulesServiceProvider extends ServiceProvider
         $this->app->register(ConsoleServiceProvider::class);
         $this->app->register(ContractsServiceProvider::class);
         $this->app->register(MenuServiceProvider::class);
+        $this->app->register(PermissionServiceProvider::class);
     }
 }

@@ -42,12 +42,30 @@ class MakeMenuControllerCommand extends Command
         $this->loadExistingControllers($module);
 
         $menu = require $menuPath;
-        $this->generateControllersAndRoutes($module, $menu['module']['sub_module']);
+
+        // Generate main module controller and route
+        $this->handleControllerGeneration($module, $moduleName);
+
+        // Start with the main module route
+        $routeGroups = [];
+
+        // Get middleware from module config if available, otherwise use empty array
+        $mainMiddleware = $menu['module']['middleware'] ?? [];
+
+        // Only add routes to groups if middleware is defined, otherwise create a special "no_middleware" key
+        $middlewareKey = !empty($mainMiddleware) ? $this->getMiddlewareKey($mainMiddleware) : "no_middleware";
+        $routeGroups[$middlewareKey] = [
+            'middleware' => $mainMiddleware,
+            'routes' => [$this->generateResourceRoute($moduleName)]
+        ];
+
+        // Then process sub modules
+        $this->generateControllersAndRoutes($module, $menu['module']['sub_module'], $routeGroups);
     }
 
     protected function loadExistingControllers($module): void
     {
-        $controllersPath = $module->getPath() . '/Http/Controllers';
+        $controllersPath = $module->getPath() . '/App/Http/Controllers';
         if (!file_exists($controllersPath)) {
             return;
         }
@@ -61,19 +79,17 @@ class MakeMenuControllerCommand extends Command
         }
     }
 
-    protected function generateControllersAndRoutes($module, array $subModules): void
+    protected function generateControllersAndRoutes($module, array $subModules, array &$routeGroups): void
     {
-        $routeGroups = [];
-
         foreach ($subModules as $subModule) {
             // Generate or check main sub-module controller
             $this->handleControllerGeneration($module, $subModule['name']);
 
-            $middlewareKey = $this->getMiddlewareKey($subModule['middleware']);
+            $middlewareKey = !empty($subModule['middleware']) ? $this->getMiddlewareKey($subModule['middleware']) : "no_middleware";
 
             if (!isset($routeGroups[$middlewareKey])) {
                 $routeGroups[$middlewareKey] = [
-                    'middleware' => $subModule['middleware'],
+                    'middleware' => $subModule['middleware'] ?? [],
                     'routes' => []
                 ];
             }
@@ -85,11 +101,11 @@ class MakeMenuControllerCommand extends Command
                 foreach ($subModule['actions'] as $action) {
                     $this->handleControllerGeneration($module, $action['name'], $subModule['name']);
 
-                    $actionMiddlewareKey = $this->getMiddlewareKey($action['middleware']);
+                    $actionMiddlewareKey = !empty($action['middleware']) ? $this->getMiddlewareKey($action['middleware']) : "no_middleware";
 
                     if (!isset($routeGroups[$actionMiddlewareKey])) {
                         $routeGroups[$actionMiddlewareKey] = [
-                            'middleware' => $action['middleware'],
+                            'middleware' => $action['middleware'] ?? [],
                             'routes' => []
                         ];
                     }
@@ -108,20 +124,23 @@ class MakeMenuControllerCommand extends Command
 
     protected function handleControllerGeneration($module, string $name, ?string $subFolder = null): void
     {
+        // Apply StudlyCase to controller name
         $controllerName = Str::studly($name) . 'Controller';
-        $controllerPath = $subFolder ? "{$subFolder}/{$controllerName}" : $controllerName;
+
+        // Apply StudlyCase to subfolder as well for PSR-4 compliance
+        $subFolderStudly = $subFolder ? Str::studly($subFolder) : null;
+        $controllerPath = $subFolderStudly ? "{$subFolderStudly}/{$controllerName}" : $controllerName;
 
         // Check if controller needs to be generated
         if (
             !isset($this->existingControllers[$controllerPath]) ||
             $this->existingControllers[$controllerPath] < $this->menuLastModified
         ) {
-
-            $this->generateController($module, $name, $subFolder);
+            $this->generateController($module, $name, $subFolderStudly);
             $this->info("Controller [{$controllerPath}] " .
                 (isset($this->existingControllers[$controllerPath]) ? "updated" : "created") . ".");
         } else {
-            $this->info("Controller [{$controllerPath}] is already Exist so Skiping.");
+            $this->info("Controller [{$controllerPath}] already exists, skipping.");
         }
     }
 
@@ -143,17 +162,30 @@ class MakeMenuControllerCommand extends Command
         $routeName = Str::kebab($name);
         $parentPath = $parentName ? Str::kebab($parentName) : '';
 
+        // Include module name as prefix (convert to kebab case)
+        $modulePrefix = Str::kebab($this->argument('module'));
+
         // Combine paths without extra hyphens
-        $routePath = $parentPath
-            ? $parentPath . '/' . $routeName
-            : $routeName;
+        // Special case for main module controller - don't duplicate module name in route
+        if ($routeName === $modulePrefix && !$parentName) {
+            $routePath = $modulePrefix;
+        } else {
+            $routePath = $modulePrefix . '_' . ($parentPath
+                ? $parentPath . '_' . $routeName
+                : $routeName);
+        }
 
-        // Generate controller path
-        $controller = $parentName
-            ? "{$parentName}\\{$name}Controller"
-            : "{$name}Controller";
+        // Generate controller class name with full namespace
+        $controllerName = Str::studly($name) . 'Controller';
+        $controllerPath = $parentName
+            ? Str::studly($parentName) . '\\' . $controllerName
+            : $controllerName;
 
-        return "    Route::apiResource('{$routePath}', '{$controller}');";
+        // Create the full controller class path with consistent App/Http/Controllers path
+        $controllerClass = "Modules\\" . $this->argument('module') . "\\App\\Http\\Controllers\\" . $controllerPath;
+
+        // Return a temporary format that will be parsed later
+        return "    Route::apiResource('{$routePath}', {$controllerClass}::class);";
     }
 
     protected function getMiddlewareKey(array $middleware): string
@@ -166,13 +198,74 @@ class MakeMenuControllerCommand extends Command
     {
         $routePath = $module->getPath() . "/Routes/api.php";
         $content = "<?php\n\n";
-        $content .= "use Illuminate\Support\Facades\Route;\n\n";
+        $content .= "use Illuminate\Support\Facades\Route;\n";
 
-        foreach ($groups as $group) {
-            $middlewareString = implode("', '", $group['middleware']);
-            $content .= "Route::middleware(['{$middlewareString}'])->group(function () {\n";
-            $content .= implode("\n", $group['routes']);
-            $content .= "\n});\n\n";
+        // Collect all controllers that will be used
+        $controllers = [];
+
+        // Transform the route groups to use the new array-based apiResources style
+        foreach ($groups as $key => $group) {
+            $groups[$key]['resources'] = [];
+
+            foreach ($group['routes'] as $route) {
+                // Extract route path and controller from the original format
+                preg_match('/Route::apiResource\(\'(.*?)\', (.*?)\)/', $route, $matches);
+
+                if (count($matches) >= 3) {
+                    $path = $matches[1];
+                    $controller = trim($matches[2], "';");
+
+                    // For the new format, we need just the controller class without quotes
+                    $controllerClass = str_replace("::class", "", $controller);
+                    $controllers[] = $controllerClass;
+
+                    // Get just the class name (not the full namespace)
+                    $classParts = explode('\\', $controllerClass);
+                    $className = end($classParts);
+
+                    // Store the route path and controller for later use in apiResources array
+                    $groups[$key]['resources'][$path] = $className . "::class";
+                }
+            }
+        }
+
+        // Add use statements for all controllers
+        $uniqueControllers = array_unique($controllers);
+        foreach ($uniqueControllers as $controller) {
+            $content .= "use $controller;\n";
+        }
+        $content .= "\n";
+
+        // Generate route groups using apiResources array syntax
+        foreach ($groups as $key => $group) {
+            if (empty($group['resources'])) {
+                continue;
+            }
+
+            if ($key === "no_middleware") {
+                // No middleware, just define routes directly
+                $content .= "Route::apiResources([\n";
+
+                foreach ($group['resources'] as $path => $controller) {
+                    $content .= "    '$path' => $controller,\n";
+                }
+
+                $content .= "]);\n\n";
+            } else {
+                // With middleware
+                $middlewareString = implode("', '", $group['middleware']);
+                $content .= "Route::middleware(['{$middlewareString}'])->group(function () {\n";
+
+                // Use the apiResources method with array notation
+                $content .= "    Route::apiResources([\n";
+
+                foreach ($group['resources'] as $path => $controller) {
+                    $content .= "        '$path' => $controller,\n";
+                }
+
+                $content .= "    ]);\n";
+                $content .= "});\n\n";
+            }
         }
 
         file_put_contents($routePath, $content);

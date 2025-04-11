@@ -2,23 +2,23 @@
 // stubs/menu.stub
 return [
     'module' => [
-        'name' => '$STUDLY_NAME$',
-        'title' => '$MODULE_NAME$',
+        'name' => 'Inventory',
+        'title' => 'Inventory',
         'icon' => 'fas fa-cube',
         'order' => 1,
         'routes_type' => '',
         'sub_module' => [
             [
-                'name' => '$STUDLY_NAME$',
-                'title' => '$MODULE_NAME$',
+                'name' => 'CreateItem',
+                'title' => 'Create Item',
                 'routes_type' => 'full',
                 'icon' => 'fas fa-list',
                 'middleware' => ['api', 'auth'],
                 'order' => 1,
                 'actions'=>[
                     [
-                    'name' => '$STUDLY_NAME$',
-                    'title' => '$MODULE_NAME$',
+                    'name' => 'CreateCategory',
+                    'title' => 'CreateCategory',
                     'routes_type' => 'single',
                     'icon' => 'fas fa-list',
                     'middleware' => ['api', 'auth'],

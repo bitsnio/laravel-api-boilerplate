@@ -1,19 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\TestModule\App\Http\Controllers\TestModuleController;
+use Modules\TestModule\App\Http\Controllers\MasteritemController;
+use Modules\TestModule\App\Http\Controllers\Masteritem\CreateitemController;
+use Modules\TestModule\App\Http\Controllers\Masteritem\CreatecategoryController;
 
-Route::middleware(['web', 'auth'])->group(function () {
-    Route::apiResource('add-items', 'AddItemsController');
-    Route::apiResource('add-items/update-items', 'AddItems\UpdateItemsController');
-});
-
-Route::middleware(['api', 'auth', 'permission'])->group(function () {
-    Route::apiResource('add-categories', 'AddCategoriesController');
-});
+Route::apiResources([
+    'test-module' => TestModuleController::class,
+]);
 
 Route::middleware(['api', 'auth'])->group(function () {
-    Route::apiResource('add-categories/review', 'AddCategories\ReviewController');
-    Route::apiResource('returns', 'ReturnsController');
-    Route::apiResource('returns/return-from-customers', 'Returns\ReturnFromCustomersController');
+    Route::apiResources([
+        'test-module_masteritem' => MasteritemController::class,
+        'test-module_masteritem_createitem' => CreateitemController::class,
+        'test-module_masteritem_createcategory' => CreatecategoryController::class,
+    ]);
 });
 
