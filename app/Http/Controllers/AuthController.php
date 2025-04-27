@@ -25,27 +25,7 @@ class AuthController extends Controller {
     */
 
     public function login( Request $request ) {
-        // try {
-        //     $credentials = request( [ 'email', 'password' ] );
-        //     $validateUser = Validator::make( $credentials, [
-        //         'email' => 'required',
-        //         'password' => 'required',
-        // ] );
-
-        //     if ( $validateUser->fails() ) {
-        //         return response()->json( [ 'error' => 'email or password is missing' ], 400 );
-        //     }
-
-        //     //  dd( Auth::attempt( $credentials ) );
-        //     if ( !$token = Auth::attempt( $credentials ) ) {
-        //         return response()->json( [ 'error' => 'invalid login credentials' ], 401 );
-        //     }
-
-        //     return JsonResponse::successResponse( [], 'Logged in successfully', 200, $token );
-        // }
-        // catch( \Throwable $th ) {
-        //     throw new \Exception( $th->getMessage() );
-        // }
+       
         try {
             $input = $request->only( 'email', 'password' );
 
@@ -54,11 +34,11 @@ class AuthController extends Controller {
                 'password' => 'required',
             ] );
             if ( $validateUser->fails() ) {
-                return  Helper::errorResponse( Helper::validationErrorsToString( $validateUser->errors() ), 400 );
+                return  JsonResponse::errorResponse(  $validateUser->errors() , 400 );
             }
 
             if ( ! $token = JWTAuth::attempt( $input ) ) {
-                return  Helper::errorResponse( 'Invalid login credentials', 400 );
+                return  JsonResponse::errorResponse( 'Invalid login credentials', 400 );
             }
 
             $user = User::where( 'email', $request->email )->first();
@@ -66,12 +46,12 @@ class AuthController extends Controller {
             $token = JWTAuth::claims( $customClaims )->attempt( $input );
             //  dd( $user );
             // $data = Helper::usersModules( $user->id );
-            return Helper::successResponse([], 'User Logged In Successfully', 200, $token );
+            return JsonResponse::successResponse([], 'User Logged In Successfully', 200, $token );
 
         } catch ( JWTException $e ) {
-            return Helper::errorResponse( $e->getMessage() );
+            return JsonResponse::errorResponse( $e->getMessage() );
         } catch ( \Throwable $th ) {
-            return Helper::errorResponse( $th->getMessage() );
+            return JsonResponse::errorResponse( $th->getMessage() );
         }
     }
 

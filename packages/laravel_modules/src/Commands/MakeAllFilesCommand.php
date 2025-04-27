@@ -18,7 +18,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Throwable;
 
-class MakeAllfilesCommand extends GeneratorCommand
+class MakeAllFilesCommand extends GeneratorCommand
 {
     use ModuleCommandTrait;
 

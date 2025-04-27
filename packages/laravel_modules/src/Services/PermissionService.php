@@ -46,27 +46,34 @@ class PermissionService
         $this->validateRoleConfig($config);
         $allMenus = $this->menuService->getMenus();
 
-        // Process modules with all permissions
+        // Process permissions
         $allPermissions = $this->processModulesWithAllPermissions(
             $allMenus['menus'],
             $config['modules'] ?? []
         );
 
-        // Process modules with granular permissions
         $granularPermissions = $this->processGranularModules(
             $allMenus['menus'],
             $config['granular_modules'] ?? []
         );
 
         $permissions = array_merge($allPermissions, $granularPermissions);
-        $this->ensurePermissionsExist($permissions);
+
+        // 👇 pass the correct guard name based on your role
+        $guardName = $config['guard_name'] ?? 'api';
+
+        $this->ensurePermissionsExist($permissions, $guardName);
 
         $role = Role::updateOrCreate(
-            ['name' => $config['name']],
+            ['name' => $config['name'], 'guard_name' => $guardName],
             ['description' => $config['description'] ?? null]
         );
 
-        $role->syncPermissions($permissions);
+        $role->syncPermissions(
+            Permission::whereIn('name', $permissions)
+                ->where('guard_name', $guardName)
+                ->get()
+        );
 
         return [
             'role' => $role->name,
@@ -77,6 +84,7 @@ class PermissionService
             )
         ];
     }
+
 
     protected function processModulesWithAllPermissions(array $menus, array $moduleNames): array
     {
@@ -234,13 +242,19 @@ class PermissionService
         );
     }
 
-    protected function ensurePermissionsExist(array $permissions): void
+    protected function ensurePermissionsExist(array $permissions, string $guardName = 'api'): void
     {
-        $existing = Permission::whereIn('name', $permissions)->pluck('name');
+        $existing = Permission::whereIn('name', $permissions)
+            ->where('guard_name', $guardName)
+            ->pluck('name');
+
         $missing = array_diff($permissions, $existing->toArray());
 
         foreach ($missing as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::create([
+                'name' => $permission,
+                'guard_name' => $guardName
+            ]);
         }
     }
 
@@ -278,7 +292,7 @@ class PermissionService
                 continue;
             }
 
-            $replaceExisting 
+            $replaceExisting
                 ? $user->syncRoles($roles)
                 : $user->assignRole($roles);
 

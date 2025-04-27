@@ -1,10 +1,10 @@
-@hostname = 127.0.0.1:8001/api
+@hostname = 127.0.0.1:8000/api
 
 POST http://{{hostname}}/auth/login HTTP/1.1
 content-type: application/json
 
 {
-    "email": "oreilly.sarina@example.net",
+    "email": "schiller.ansel@example.net",
     "password": "password"
 }
 
@@ -28,9 +28,9 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vM
 ###
 
 ###
-GET http://{{hostname}}/test-module_masteritem_createitem HTTP/1.1
+GET http://{{hostname}}/inventory HTTP/1.1
 content-type: application/json
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDEvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3NDM5Mzc4MTgsImV4cCI6MTc0Mzk3MzgxOCwibmJmIjoxNzQzOTM3ODE4LCJqdGkiOiJHMms5aGxDb002SzhENExvIiwic3ViIjoiMSIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjciLCJ1c2VyX2lkIjoxLCJ1c2VyX25hbWUiOiJDbGlmdG9uIExpdHRlbCIsImNvbXBhbnlfaWQiOjB9.Hk8o-i-x9hXbtKELjrXNf3gQX8PXJLJu1_CyvA53euY
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3NDU2OTYxODksImV4cCI6MTc0NTczMjE4OSwibmJmIjoxNzQ1Njk2MTg5LCJqdGkiOiJWdTBqYnJSYXJ0QThQUFhsIiwic3ViIjoiMTEiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3IiwidXNlcl9pZCI6MTEsInVzZXJfbmFtZSI6IkFseWNlIE1jR2x5bm4iLCJjb21wYW55X2lkIjpudWxsfQ.aKvj3EjEomrC3wKESdqyfxFDt6qhwg8iyFPfp4P4BAw
 
 ###
 POST http://{{hostname}}/auth/register HTTP/1.1
