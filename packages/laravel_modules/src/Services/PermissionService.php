@@ -2,9 +2,10 @@
 
 namespace Bitsnio\Modules\Services;
 
-use Bitsnio\Modules\Services\MenuService;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -12,10 +13,89 @@ use Illuminate\Support\Collection;
 class PermissionService
 {
     protected $menuService;
+    protected $cacheKey = 'module_permissions';
+    protected $cacheDuration = 1440; // 24 hours
+
+    protected $methodPermissionMap = [
+        'GET' => 'view',
+        'POST' => 'create',
+        'PUT' => 'update',
+        'PATCH' => 'update',
+        'DELETE' => 'delete'
+    ];
 
     public function __construct(MenuService $menuService)
     {
         $this->menuService = $menuService;
+    }
+
+    /**
+     * Generate permissions for a module, submodule, or action
+     * 
+     * @param string $moduleName Module name
+     * @param string $name Submodule or action name
+     * @return array Generated permissions
+     */
+    public function generateModulePermissions(string $moduleName, string $name): array
+    {
+        $identifier = Str::slug($moduleName . ' ' . $name, '.');
+
+        return [
+            'view' => $identifier . '.view',
+            'create' => $identifier . '.create',
+            'update' => $identifier . '.update',
+            'delete' => $identifier . '.delete'
+        ];
+    }
+
+    /**
+     * Get all permissions for all modules or a specific module
+     * 
+     * @param string|null $moduleName Optional module name to filter by
+     * @return array All permissions organized by module and section
+     */
+    public function getAllPermissions(?string $moduleName = null): array
+    {
+        $cacheKey = $this->cacheKey . ($moduleName ? '_' . $moduleName : '');
+
+        return Cache::remember($cacheKey, $this->cacheDuration, function () use ($moduleName) {
+            $allMenus = $this->menuService->getMenus($moduleName);
+            $allPermissions = [];
+
+            foreach ($allMenus as $module => $menuData) {
+                $modulePermissions = [];
+                
+                // Module level permissions
+                $modulePermissionSet = $this->generateModulePermissions($module, $menuData['name']);
+                $modulePermissions[$menuData['name']] = $modulePermissionSet;
+
+                // Process sub-modules
+                if (isset($menuData['sub_module']) && is_array($menuData['sub_module'])) {
+                    foreach ($menuData['sub_module'] as $subModule) {
+                        $subModuleName = $subModule['name'];
+                        $subModulePermissionSet = $this->generateModulePermissions($module, $subModuleName);
+                        $modulePermissions[$subModuleName] = $subModulePermissionSet;
+
+                        // Process actions
+                        if (isset($subModule['actions']) && is_array($subModule['actions'])) {
+                            foreach ($subModule['actions'] as $action) {
+                                if (!isset($action['name'])) {
+                                    continue;
+                                }
+
+                                $actionName = $subModuleName . '.' . $action['name'];
+                                $actionPermissionSet = $this->generateModulePermissions($module, $actionName);
+                                $modulePermissions[$actionName] = $actionPermissionSet;
+                            }
+                        }
+                    }
+                }
+
+                $allPermissions[$module] = $modulePermissions;
+            }
+
+            return $allPermissions;
+        });
     }
 
     /**
@@ -46,20 +126,30 @@ class PermissionService
         $this->validateRoleConfig($config);
         $allMenus = $this->menuService->getMenus();
 
+        // Generate permissions for each module and create a case map
+        $modulePermissions = [];
+        $moduleNameMap = []; // Maps lowercase module names to original case
+        foreach ($allMenus as $moduleName => $menuData) {
+            $modulePermissions[$moduleName] = $this->generatePermissionsForModule($moduleName, $menuData);
+            $moduleNameMap[strtolower($moduleName)] = $moduleName;
+        }
+
         // Process permissions
         $allPermissions = $this->processModulesWithAllPermissions(
-            $allMenus['menus'],
-            $config['modules'] ?? []
+            $modulePermissions,
+            $config['modules'] ?? [],
+            $moduleNameMap
         );
 
         $granularPermissions = $this->processGranularModules(
-            $allMenus['menus'],
-            $config['granular_modules'] ?? []
+            $modulePermissions,
+            $config['granular_modules'] ?? [],
+            $moduleNameMap
         );
 
         $permissions = array_merge($allPermissions, $granularPermissions);
 
-        // 👇 pass the correct guard name based on your role
+        // Pass the correct guard name based on your role
         $guardName = $config['guard_name'] ?? 'api';
 
         $this->ensurePermissionsExist($permissions, $guardName);
@@ -85,19 +175,107 @@ class PermissionService
         ];
     }
 
+    /**
+     * Normalize module names array for case-insensitive comparison
+     * 
+     * @param array $moduleNames
+     * @return array
+     */
+    protected function normalizeModuleNames(array $moduleNames): array
+    {
+        return array_map('strtolower', $moduleNames);
+    }
 
-    protected function processModulesWithAllPermissions(array $menus, array $moduleNames): array
+    /**
+     * Normalize granular module configuration for case-insensitive comparison
+     * 
+     * @param array $granularModules
+     * @return array
+     */
+    protected function normalizeGranularModules(array $granularModules): array
+    {
+        $normalized = [];
+        foreach ($granularModules as $moduleName => $moduleConfig) {
+            $normalized[strtolower($moduleName)] = $moduleConfig;
+        }
+        return $normalized;
+    }
+
+    /**
+     * Normalize module permissions keys for case-insensitive comparison
+     * 
+     * @param array $modulePermissions
+     * @return array
+     */
+    protected function normalizeModulePermissionsKeys(array $modulePermissions): array
+    {
+        $normalized = [];
+        foreach ($modulePermissions as $moduleName => $permissions) {
+            $normalized[strtolower($moduleName)] = $permissions;
+        }
+        return $normalized;
+    }
+
+    /**
+     * Generate complete permissions structure for a module
+     * 
+     * @param string $moduleName Module name
+     * @param array $moduleData Module data
+     * @return array Permissions structure
+     */
+    protected function generatePermissionsForModule(string $moduleName, array $moduleData): array
+    {
+        $result = [];
+        
+        // Module level permissions
+        $modulePermissions = $this->generateModulePermissions($moduleName, $moduleData['name']);
+        $result['module'] = [
+            'permissions' => $modulePermissions
+        ];
+        
+        // Sub-module permissions
+        if (isset($moduleData['sub_module']) && is_array($moduleData['sub_module'])) {
+            foreach ($moduleData['sub_module'] as $subModule) {
+                $subModuleName = $subModule['name'];
+                $subModulePermissions = $this->generateModulePermissions($moduleName, $subModuleName);
+                
+                $result[$subModuleName] = [
+                    'permissions' => $subModulePermissions
+                ];
+                
+                // Action permissions
+                if (isset($subModule['actions']) && is_array($subModule['actions'])) {
+                    foreach ($subModule['actions'] as $action) {
+                        $actionName = $action['name'];
+                        $actionIdentifier = $subModuleName . '.' . $actionName;
+                        $actionPermissions = $this->generateModulePermissions($moduleName, $actionIdentifier);
+                        
+                        $result[$actionIdentifier] = [
+                            'permissions' => $actionPermissions
+                        ];
+                    }
+                }
+            }
+        }
+        
+        return $result;
+    }
+
+    protected function processModulesWithAllPermissions(array $modulePermissions, array $moduleNames, array $moduleNameMap): array
     {
         $permissions = [];
 
         foreach ($moduleNames as $moduleName) {
-            if (!isset($menus[$moduleName])) {
+            // Find the actual module name using the case map
+            $actualModuleName = $moduleNameMap[strtolower($moduleName)] ?? null;
+            
+            if (!$actualModuleName || !isset($modulePermissions[$actualModuleName])) {
                 continue;
             }
 
             $permissions = array_merge(
                 $permissions,
-                $this->collectAllPermissions($menus[$moduleName])
+                $this->collectAllPermissions($modulePermissions[$actualModuleName])
             );
         }
 
@@ -108,21 +286,88 @@ class PermissionService
     {
         $permissions = [];
 
-        // Module-level permissions
-        if (isset($moduleData['permissions'])) {
-            $permissions = array_merge($permissions, array_values($moduleData['permissions']));
+        foreach ($moduleData as $section) {
+            if (isset($section['permissions'])) {
+                $permissions = array_merge($permissions, array_values($section['permissions']));
+            }
         }
 
-        // Sub-module permissions
-        foreach ($moduleData['sub_module'] ?? [] as $subModule) {
-            if (isset($subModule['permissions'])) {
-                $permissions = array_merge($permissions, array_values($subModule['permissions']));
+        return $permissions;
+    }
+
+    protected function processGranularModules(array $modulePermissions, array $modulesConfig, array $moduleNameMap): array
+    {
+        $permissions = [];
+
+        foreach ($modulesConfig as $moduleName => $moduleConfig) {
+            // Find the actual module name using the case map
+            $actualModuleName = $moduleNameMap[strtolower($moduleName)] ?? null;
+            
+            if (!$actualModuleName || !isset($modulePermissions[$actualModuleName])) {
+                continue;
             }
 
-            // Action permissions
-            foreach ($subModule['actions'] ?? [] as $action) {
-                if (isset($action['permissions'])) {
-                    $permissions = array_merge($permissions, array_values($action['permissions']));
+            $moduleData = $modulePermissions[$actualModuleName];
+            
+            // Handle module-level permissions
+            if (!empty($moduleConfig['permissions']) && isset($moduleData['module'])) {
+                $permissions = array_merge(
+                    $permissions,
+                    $this->filterPermissions(
+                        $moduleData['module']['permissions'],
+                        $moduleConfig['permissions']
+                    )
+                );
+            }
+            
+            // Handle sub-modules
+            if (!empty($moduleConfig['sub_modules'])) {
+                foreach ($moduleConfig['sub_modules'] as $subModuleName => $subModuleConfig) {
+                    // Create a map of lowercase submodule names to actual keys
+                    $subModuleMap = [];
+                    foreach (array_keys($moduleData) as $key) {
+                        $subModuleMap[strtolower($key)] = $key;
+                    }
+                    
+                    // Find the actual submodule name
+                    $actualSubModuleName = $subModuleMap[strtolower($subModuleName)] ?? null;
+                    
+                    // Sub-module level permissions
+                    if (!empty($subModuleConfig['permissions']) && $actualSubModuleName && isset($moduleData[$actualSubModuleName])) {
+                        $permissions = array_merge(
+                            $permissions,
+                            $this->filterPermissions(
+                                $moduleData[$actualSubModuleName]['permissions'],
+                                $subModuleConfig['permissions']
+                            )
+                        );
+                    }
+                    
+                    // Action permissions
+                    if (!empty($subModuleConfig['actions'])) {
+                        foreach ($subModuleConfig['actions'] as $actionName => $actionPermTypes) {
+                            $possibleActionKey = $subModuleName . '.' . $actionName;
+                            
+                            // Try to find the actual action key
+                            $actualActionKey = null;
+                            foreach (array_keys($moduleData) as $key) {
+                                if (strtolower($key) === strtolower($possibleActionKey)) {
+                                    $actualActionKey = $key;
+                                    break;
+                                }
+                            }
+                            
+                            if ($actualActionKey && isset($moduleData[$actualActionKey])) {
+                                $permissions = array_merge(
+                                    $permissions,
+                                    $this->filterPermissions(
+                                        $moduleData[$actualActionKey]['permissions'],
+                                        $actionPermTypes
+                                    )
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -130,108 +375,22 @@ class PermissionService
         return $permissions;
     }
 
-    protected function processGranularModules(array $menus, array $modulesConfig): array
+    /**
+     * Find key in array in a case-insensitive way
+     * 
+     * @param array $array
+     * @param string $search
+     * @return string|null
+     */
+    protected function findCaseInsensitiveKey(array $array, string $search): ?string
     {
-        $permissions = [];
-
-        foreach ($modulesConfig as $moduleName => $moduleConfig) {
-            if (!isset($menus[$moduleName])) {
-                continue;
-            }
-
-            $moduleData = $menus[$moduleName];
-            $permissions = array_merge(
-                $permissions,
-                $this->handleModuleLevel($moduleData, $moduleConfig),
-                $this->handleSubModules($moduleData, $moduleConfig)
-            );
-        }
-
-        return $permissions;
-    }
-
-    protected function handleModuleLevel(array $moduleData, array $config): array
-    {
-        if (empty($moduleData['permissions'])) {
-            return [];
-        }
-
-        if (empty($config['permissions'])) {
-            return array_values($moduleData['permissions']);
-        }
-
-        return $this->filterPermissions(
-            $moduleData['permissions'],
-            $config['permissions']
-        );
-    }
-
-    protected function handleSubModules(array $moduleData, array $config): array
-    {
-        $permissions = [];
-
-        foreach ($moduleData['sub_module'] ?? [] as $subModule) {
-            $subModuleName = $subModule['name'];
-            $subModuleConfig = $config['sub_modules'][$subModuleName] ?? [];
-
-            if (empty($subModuleConfig)) {
-                continue;
-            }
-
-            // Sub-module level permissions
-            if (!empty($subModule['permissions'])) {
-                $permissions = array_merge(
-                    $permissions,
-                    $this->handleSubModuleLevel($subModule, $subModuleConfig)
-                );
-            }
-
-            // Action permissions
-            $permissions = array_merge(
-                $permissions,
-                $this->handleActions($subModule, $subModuleConfig)
-            );
-        }
-
-        return $permissions;
-    }
-
-    protected function handleSubModuleLevel(array $subModule, array $config): array
-    {
-        if (empty($config['permissions'])) {
-            return array_values($subModule['permissions']);
-        }
-
-        return $this->filterPermissions(
-            $subModule['permissions'],
-            $config['permissions']
-        );
-    }
-
-    protected function handleActions(array $subModule, array $config): array
-    {
-        $permissions = [];
-
-        foreach ($subModule['actions'] ?? [] as $action) {
-            $actionName = $action['name'];
-            $actionConfig = $config['actions'][$actionName] ?? [];
-
-            if (empty($actionConfig)) {
-                continue;
-            }
-
-            if (!empty($action['permissions'])) {
-                $permissions = array_merge(
-                    $permissions,
-                    $this->filterPermissions(
-                        $action['permissions'],
-                        $actionConfig
-                    )
-                );
+        $lowerSearch = strtolower($search);
+        foreach ($array as $key => $value) {
+            if (strtolower($key) === $lowerSearch) {
+                return $key;
             }
         }
-
-        return $permissions;
+        return null;
     }
 
     protected function filterPermissions(array $availablePermissions, array $requestedTypes): array
@@ -329,5 +488,80 @@ class PermissionService
     {
         $config['name'] = $roleName;
         return $this->defineRoleWithPermissions($config);
+    }
+
+    /**
+     * Sync permissions to the database
+     * 
+     * @return void
+     */
+    public function syncPermissions(): void
+    {
+        $allPermissions = $this->getAllPermissions();
+        $permissions = [];
+
+        foreach ($allPermissions as $module => $modulePerm) {
+            foreach ($modulePerm as $section => $actions) {
+                $permissions = array_merge($permissions, array_values($actions));
+            }
+        }
+
+        foreach ($permissions as $permission) {
+            // Check if the permission exists first
+            if (!Permission::where('name', $permission)->exists()) {
+                Permission::create(['name' => $permission, 'guard_name' => 'api']);
+            }
+        }
+
+        $this->clearCache();
+    }
+
+    /**
+     * Get required permission for a route and HTTP method
+     * 
+     * @param string $route The route path
+     * @param string $method HTTP method (GET, POST, etc.)
+     * @return string|null Permission name or null if not found
+     */
+    public function getRequiredPermission(string $route, string $method): ?string
+    {
+        $method = strtoupper($method);
+        $permissionType = $this->methodPermissionMap[$method] ?? 'view';
+
+        $routeParts = collect(explode('/', trim($route, '/')));
+
+        // First part is usually the module name
+        if ($routeParts->isEmpty()) {
+            return null;
+        }
+
+        $moduleName = $routeParts->first();
+        
+        // Extract the route parts after the module name
+        $routePath = $routeParts->slice(1)->values()->implode('.');
+        if (empty($routePath)) {
+            $routePath = $moduleName;
+        }
+
+        // Format the identifier
+        $identifier = Str::slug($moduleName) . '.' . Str::slug($routePath, '.');
+
+        return $identifier . '.' . $permissionType;
+    }
+
+    /**
+     * Clear permission cache
+     * 
+     * @return void
+     */
+    public function clearCache(): void
+    {
+        Cache::forget($this->cacheKey);
+        
+        // Clear cache for specific modules
+        $moduleNames = $this->menuService->allModules();
+        foreach ($moduleNames as $moduleName) {
+            Cache::forget($this->cacheKey . '_' . $moduleName);
+        }
     }
 }

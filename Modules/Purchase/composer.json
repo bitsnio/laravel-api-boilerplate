@@ -1,0 +1,31 @@
+{
+    "name": "bitsnio/purchase",
+    "description": "",
+    "authors": [
+        {
+            "name": "Shehryar Azeem",
+            "email": "shehryar.azeemt@bitsnio.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Purchase\\": "",
+            "Modules\\Purchase\\App\\": "app/",
+            "Modules\\Purchase\\Database\\Factories\\": "database/factories/",
+            "Modules\\Purchase\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Purchase\\Tests\\": "tests/"
+        }
+    }
+}

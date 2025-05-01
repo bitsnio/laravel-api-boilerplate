@@ -23,13 +23,21 @@ class InventoryController extends Controller
      */
     public function index()
     {
-        return $this->menuService->getMenus();
+        // return $this->menuService->getModuleStructure(); 
+        // return $this->menuService->getSubModules('Inventory');
+        // return $this->menuService->getSubModuleActions('Inventory', 'master_item');
+    //    Permission::assignRoleToUsers(['inventory_admin','purchasing_module'], [11]);
+        return $this->menuService->getMenus(null,true);
         
         // return Permission::getRolePermissions("inventory_admin");
         $config = [
-            'name' => 'inventory_admin', // (Required)
+            'name' => 'purchasing_module', // (Required)
             'description' => 'A person who will manage all inventory permissions', // (Optional)
-            'modules' => ['Inventory']
+            'granular_modules' => [
+                'purchase' => [
+                    'permissions' => ['view'],
+                ],
+            ],
         ];
        return Permission::defineRoleWithPermissions($config);
 

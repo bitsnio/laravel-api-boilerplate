@@ -16,24 +16,19 @@ class MenuService
     protected $cacheKey = 'module_menu_permissions';
     protected $cacheDuration = 1440; // 24 hours
 
-    protected $methodPermissionMap = [
-        'GET' => 'view',
-        'POST' => 'create',
-        'PUT' => 'update',
-        'PATCH' => 'update',
-        'DELETE' => 'delete'
-    ];
-
     public function __construct(RepositoryInterface $repository)
     {
         $this->repository = $repository;
     }
 
-    public function allModules(): array
-    {
-        return array_keys($this->repository->all());
-    }
-
+    /**
+     * Get menus for specified module or all modules
+     * Optionally filter by user permissions
+     *
+     * @param string|null $moduleName Optional module name to filter by
+     * @param bool $filterByUserPermissions Whether to filter results by user permissions
+     * @return array Array of menu structures
+     */
     public function getMenus(?string $moduleName = null, bool $filterByUserPermissions = false): array
     {
         $user = null;
@@ -54,7 +49,6 @@ class MenuService
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () use ($moduleName, $filterByUserPermissions, $user) {
             $allMenus = [];
-            $allPermissions = [];
 
             // If module name is specified, only process that module
             if ($moduleName) {
@@ -65,15 +59,14 @@ class MenuService
                     if (file_exists($menuPath)) {
                         $menu = require $menuPath;
                         if (isset($menu['module'])) {
-                            $processed = $this->processModuleMenu($menu['module'], $module->getName());
+                            $processed = $this->processModuleMenu($menu['module']);
 
                             if ($filterByUserPermissions && $user) {
                                 $processed = $this->filterMenuByUserPermissions($processed, $user);
                             }
 
-                            if (!$filterByUserPermissions || !empty($processed['menu'])) {
-                                $allMenus[$module->getName()] = $processed['menu'];
-                                $allPermissions[$module->getName()] = $processed['permissions'];
+                            if (!$filterByUserPermissions || !empty($processed)) {
+                                $allMenus[$module->getName()] = $processed;
                             }
                         }
                     }
@@ -88,244 +81,97 @@ class MenuService
                     if (file_exists($menuPath)) {
                         $menu = require $menuPath;
                         if (isset($menu['module'])) {
-                            $processed = $this->processModuleMenu($menu['module'], $module->getName());
+                            $processed = $this->processModuleMenu($menu['module']);
 
                             if ($filterByUserPermissions && $user) {
                                 $processed = $this->filterMenuByUserPermissions($processed, $user);
                             }
 
-                            if (!$filterByUserPermissions || !empty($processed['menu'])) {
-                                $allMenus[$module->getName()] = $processed['menu'];
-                                $allPermissions[$module->getName()] = $processed['permissions'];
+                            if (!$filterByUserPermissions || !empty($processed)) {
+                                $allMenus[$module->getName()] = $processed;
                             }
                         }
                     }
                 }
             }
 
-            return [
-                'menus' => $allMenus,
-                'permissions' => $allPermissions
-            ];
+            return $allMenus;
         });
     }
 
-    protected function processModuleMenu(array $moduleMenu, string $moduleName): array
+    /**
+     * Process a module menu structure
+     * 
+     * @param array $moduleMenu The module menu configuration
+     * @return array Processed menu structure
+     */
+    protected function processModuleMenu(array $moduleMenu): array
     {
-        $permissions = [];
-        $processedMenu = $moduleMenu;
-
-        // Generate module-level permissions
-        $modulePermissions = $this->generateModulePermissions(
-            $moduleName,
-            $moduleMenu['name']
-        );
-        $permissions[$moduleMenu['name']] = $modulePermissions;
-        $processedMenu['permissions'] = $modulePermissions;
-
-        if (isset($moduleMenu['sub_module']) && is_array($moduleMenu['sub_module'])) {
-            foreach ($moduleMenu['sub_module'] as $key => $subModule) {
-                $subModulePermissions = $this->generateModulePermissions(
-                    $moduleName,
-                    $subModule['name']
-                );
-
-                $permissions[$subModule['name']] = $subModulePermissions;
-                $processedMenu['sub_module'][$key]['permissions'] = $subModulePermissions;
-
-                // Process actions
-                if (isset($subModule['actions'])) {
-                    $actions = is_array($subModule['actions']) && isset($subModule['actions']['name'])
-                        ? [$subModule['actions']]
-                        : $subModule['actions'];
-
-                    if (is_array($actions)) {
-                        foreach ($actions as $actionKey => $action) {
-                            if (!is_array($action) || !isset($action['name'])) {
-                                continue;
-                            }
-
-                            $actionPermissions = $this->generateModulePermissions(
-                                $moduleName,
-                                $subModule['name'] . '.' . $action['name']
-                            );
-
-                            $permissions[$subModule['name'] . '.' . $action['name']] = $actionPermissions;
-
-                            if (isset($processedMenu['sub_module'][$key]['actions'][$actionKey])) {
-                                $processedMenu['sub_module'][$key]['actions'][$actionKey]['permissions'] =
-                                    $actionPermissions;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return [
-            'menu' => $processedMenu,
-            'permissions' => $permissions
-        ];
+        // Return the menu structure as is, without adding permissions
+        return $moduleMenu;
     }
 
-    protected function generateModulePermissions(string $moduleName, string $name): array
-    {
-        $identifier = Str::slug($moduleName . ' ' . $name, '.');
-
-        return [
-            'view' => $identifier . '.view',
-            'create' => $identifier . '.create',
-            'update' => $identifier . '.update',
-            'delete' => $identifier . '.delete'
-        ];
-    }
-
-    public function syncPermissions(array $modulePermissions = null): void
-    {
-        if ($modulePermissions === null) {
-            $allMenus = $this->getMenus(false);
-            $modulePermissions = $allMenus['permissions'] ?? [];
-        }
-
-        $permissions = [];
-
-        foreach ($modulePermissions as $module => $perms) {
-            foreach ($perms as $section => $actions) {
-                $permissions = array_merge($permissions, array_values($actions));
-            }
-        }
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-        }
-    }
-
-    public function createRoleWithPermissions(string $roleName, array $selectedPermissions): Role
-    {
-        $role = Role::firstOrCreate(['name' => $roleName]);
-
-        // Sync the selected permissions to the role
-        $permissions = Permission::whereIn('name', $selectedPermissions)->get();
-        $role->syncPermissions($permissions);
-
-        return $role;
-    }
-
-    public function getRequiredPermission(string $route, string $method): ?string
-    {
-        $method = strtoupper($method);
-        $permissionType = $this->methodPermissionMap[$method] ?? 'view';
-
-        $routeParts = collect(explode('/', trim($route, '/')));
-
-        // First part is usually the module name
-        if ($routeParts->isEmpty()) {
-            return null;
-        }
-
-        $moduleName = $routeParts->first();
-        $allMenus = $this->getMenus();
-
-        // Extract the route parts after the module name
-        $routePath = $routeParts->slice(1)->values()->implode('.');
-        if (empty($routePath)) {
-            $routePath = $moduleName;
-        }
-
-        // Format the identifier
-        $identifier = Str::slug($moduleName) . '.' . Str::slug($routePath, '.');
-
-        return $identifier . '.' . $permissionType;
-    }
-
-    protected function filterMenuByUserPermissions(array $processed, $user): array
+    /**
+     * Filter menu by user permissions
+     * 
+     * @param array $menu The menu structure
+     * @param object $user The authenticated user
+     * @return array Filtered menu structure
+     */
+    protected function filterMenuByUserPermissions(array $menu, $user): array
     {
         if (!$user) {
-            return [
-                'menu' => [],
-                'permissions' => []
-            ];
+            return [];
         }
-
-        $processedMenu = $processed['menu'];
-        $filteredPermissions = $processed['permissions'];
-
-        // Check if user has any permissions for this module
-        $modulePermissions = $processed['menu']['permissions'] ?? [];
-        $hasModulePermission = false;
-
-        foreach ($modulePermissions as $permission) {
-            if ($user->can($permission)) {
-                $hasModulePermission = true;
-                break;
-            }
+    
+        $moduleName = strtolower($menu['name'] ?? '');
+    
+        // Module permission: inventory.inventory.view (all lowercase)
+        $modulePermission = strtolower("{$moduleName}.{$moduleName}.view");
+    
+        if (!$user->can($modulePermission)) {
+            return [];
         }
-
-        if (!$hasModulePermission) {
-            // No permissions for this module at all
-            return [
-                'menu' => [],
-                'permissions' => []
-            ];
-        }
-
-        // Filter sub-modules based on permissions
-        if (isset($processedMenu['sub_module']) && is_array($processedMenu['sub_module'])) {
-            foreach ($processedMenu['sub_module'] as $key => $subModule) {
-                $hasSubModulePermission = false;
-
-                // Check sub-module permissions
-                if (isset($subModule['permissions'])) {
-                    foreach ($subModule['permissions'] as $permission) {
-                        if ($user->can($permission)) {
-                            $hasSubModulePermission = true;
-                            break;
-                        }
-                    }
-                }
-
-                // If no permission, remove this sub-module
-                if (!$hasSubModulePermission) {
-                    unset($processedMenu['sub_module'][$key]);
+    
+        if (isset($menu['sub_module']) && is_array($menu['sub_module'])) {
+            foreach ($menu['sub_module'] as $key => $subModule) {
+                $subModuleName = strtolower($subModule['name'] ?? '');
+                $subModulePermission = strtolower("{$moduleName}.{$subModuleName}.view");
+    
+                if (!$user->can($subModulePermission)) {
+                    unset($menu['sub_module'][$key]);
                     continue;
                 }
-
-                // Filter actions based on permissions
+    
                 if (isset($subModule['actions']) && is_array($subModule['actions'])) {
                     foreach ($subModule['actions'] as $actionKey => $action) {
-                        $hasActionPermission = false;
-
-                        if (isset($action['permissions'])) {
-                            foreach ($action['permissions'] as $permission) {
-                                if ($user->can($permission)) {
-                                    $hasActionPermission = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        // If no permission, remove this action
-                        if (!$hasActionPermission) {
-                            unset($processedMenu['sub_module'][$key]['actions'][$actionKey]);
+                        $actionName = strtolower($action['name'] ?? '');
+                        $actionPermission = strtolower("{$moduleName}.{$subModuleName}.{$actionName}.view");
+    
+                        if (!$user->can($actionPermission)) {
+                            unset($menu['sub_module'][$key]['actions'][$actionKey]);
                         }
                     }
-
-                    // Reset array keys
-                    if (isset($processedMenu['sub_module'][$key]['actions'])) {
-                        $processedMenu['sub_module'][$key]['actions'] = array_values($processedMenu['sub_module'][$key]['actions']);
+                    if (isset($menu['sub_module'][$key]['actions'])) {
+                        $menu['sub_module'][$key]['actions'] = array_values($menu['sub_module'][$key]['actions']);
                     }
                 }
             }
-
-            // Reset array keys for sub-modules
-            $processedMenu['sub_module'] = array_values($processedMenu['sub_module']);
+            $menu['sub_module'] = array_values($menu['sub_module']);
         }
-
-        return [
-            'menu' => $processedMenu,
-            'permissions' => $filteredPermissions
-        ];
+    
+        return $menu;
     }
+
+
+
+
+    public function allModules(): array
+    {
+        return array_keys($this->repository->all());
+    }
+
+
 
     public function clearCache(): void
     {
@@ -340,5 +186,110 @@ class MenuService
         } catch (\Exception $e) {
             // Token invalid or not present, which is fine
         }
+    }
+
+    /**
+     * Get all sub-modules for a specific module
+     * 
+     * @param string $moduleName The name of the module
+     * @return array Array of sub-modules or empty array if module not found
+     */
+    public function getSubModules(string $moduleName): array
+    {
+        $moduleMenus = $this->getMenus($moduleName);
+
+        if (empty($moduleMenus['menus'][$moduleName]) || !isset($moduleMenus['menus'][$moduleName]['sub_module'])) {
+            return [];
+        }
+
+        return $moduleMenus['menus'][$moduleName]['sub_module'];
+    }
+
+    /**
+     * Get all actions for a specific sub-module within a module
+     * 
+     * @param string $moduleName The name of the module
+     * @param string $subModuleName The name of the sub-module
+     * @return array Array of actions or empty array if not found
+     */
+    public function getSubModuleActions(string $moduleName, string $subModuleName): array
+    {
+        $subModules = $this->getSubModules($moduleName);
+
+        foreach ($subModules as $subModule) {
+            if ($subModule['name'] === $subModuleName) {
+                return $subModule['actions'] ?? [];
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Get all modules structure with their sub-modules and actions
+     * Optionally filter by user permissions
+     * 
+     * @param bool $filterByUserPermissions Whether to filter by user permissions
+     * @return array Hierarchical structure of modules, sub-modules and actions
+     */
+    public function getModuleStructure(bool $filterByUserPermissions = false): array
+    {
+        $allData = $this->getMenus(null, $filterByUserPermissions);
+        $structure = [];
+
+        if (!isset($allData['menus']) || empty($allData['menus'])) {
+            return [];
+        }
+
+        foreach ($allData['menus'] as $moduleName => $moduleData) {
+            $module = [
+                'name' => $moduleData['name'],
+                'title' => $moduleData['title'] ?? $moduleData['name'],
+                'icon' => $moduleData['icon'] ?? null,
+                'order' => $moduleData['order'] ?? 999,
+                'sub_modules' => []
+            ];
+
+            if (isset($moduleData['sub_module']) && is_array($moduleData['sub_module'])) {
+                foreach ($moduleData['sub_module'] as $subModule) {
+                    $subModuleData = [
+                        'name' => $subModule['name'],
+                        'title' => $subModule['title'] ?? $subModule['name'],
+                        'icon' => $subModule['icon'] ?? null,
+                        'order' => $subModule['order'] ?? 999,
+                        'routes_type' => $subModule['routes_type'] ?? null,
+                        'actions' => []
+                    ];
+
+                    if (isset($subModule['actions']) && is_array($subModule['actions'])) {
+                        foreach ($subModule['actions'] as $action) {
+                            $subModuleData['actions'][] = [
+                                'name' => $action['name'],
+                                'title' => $action['title'] ?? $action['name'],
+                                'icon' => $action['icon'] ?? null,
+                                'order' => $action['order'] ?? 999,
+                                'routes_type' => $action['routes_type'] ?? null
+                            ];
+                        }
+
+                        // Sort actions by order
+                        usort($subModuleData['actions'], function ($a, $b) {
+                            return $a['order'] <=> $b['order'];
+                        });
+                    }
+
+                    $module['sub_modules'][] = $subModuleData;
+                }
+
+                // Sort sub-modules by order
+                usort($module['sub_modules'], function ($a, $b) {
+                    return $a['order'] <=> $b['order'];
+                });
+            }
+
+            $structure[$moduleName] = $module;
+        }
+
+        return $structure;
     }
 }
